@@ -2,8 +2,7 @@ package words
 
 import (
 	"bufio"
-	"log"
-	"os"
+	"embed"
 	"strconv"
 	"strings"
 	"sync"
@@ -11,21 +10,29 @@ import (
 
 type Dictionary struct {
 	wordLength int
-	words map[string]*Word
+	words      map[string]*Word
 }
 
-func NewDictionary(wordLengh int) (result *Dictionary) {
-	result = &Dictionary{}
-	result.words = map[string]*Word{}
-	result.wordLength = wordLengh
-	result.load()
+func NewDictionary(wordLength int) (result *Dictionary) {
+	if existing, ok := cache.dictionaries[wordLength]; !ok {
+		result = &Dictionary{}
+		result.words = map[string]*Word{}
+		result.wordLength = wordLength
+		result.load()
+		cache.dictionaries[wordLength] = result
+	} else {
+		result = existing
+	}
 	return
 }
 
+//go:embed *
+var resources embed.FS
+
 func (d *Dictionary) load() {
-	file, err := os.Open("./resources/dictionary-" + strconv.Itoa(d.wordLength) + "-letter-words.txt")
+	file, err := resources.Open("resources/dictionary-" + strconv.Itoa(d.wordLength) + "-letter-words.txt")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer file.Close()
 
@@ -49,7 +56,7 @@ func (d *Dictionary) WordLength() int {
 	return d.wordLength
 }
 
-func (d *Dictionary) addWord(actualWord string, builder *wordLinkageBuilder)  {
+func (d *Dictionary) addWord(actualWord string, builder *wordLinkageBuilder) {
 	if len(actualWord) == d.wordLength {
 		var word = newWord(actualWord)
 		d.words[word.ActualWord()] = word
@@ -91,10 +98,13 @@ var (
 	cache *dictionaryCache
 )
 
-func LoadDictionary(wordLength int) (result *Dictionary) {
+func init() {
 	once.Do(func() {
 		cache = &dictionaryCache{dictionaries: map[int]*Dictionary{}}
 	})
+}
+
+func LoadDictionary(wordLength int) (result *Dictionary) {
 	if existing, ok := cache.dictionaries[wordLength]; !ok {
 		result = NewDictionary(wordLength)
 		cache.dictionaries[wordLength] = result
@@ -103,4 +113,3 @@ func LoadDictionary(wordLength int) (result *Dictionary) {
 	}
 	return
 }
-

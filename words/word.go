@@ -4,12 +4,17 @@ import (
 	"strings"
 )
 
+const reservedPatternChar = '_'
+
 type Word struct {
 	actualWord  string
 	LinkedWords *[]*Word
 }
 
 func newWord(actualWord string) *Word {
+	if strings.Contains(actualWord, string(reservedPatternChar)) {
+		panic("Word cannot contain reserved character ('" + string(reservedPatternChar) + "')")
+	}
 	return &Word{actualWord: strings.ToUpper(actualWord), LinkedWords: &[]*Word{}}
 }
 
