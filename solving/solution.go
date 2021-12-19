@@ -23,13 +23,17 @@ func (s *Solution) ToString() string {
 	return sb.String()
 }
 
+func (s *Solution) len() int {
+	return len(s.ladder)
+}
+
 func newSolution(words ...*words.Word) *Solution {
 	return &Solution{ladder: words}
 }
 
 type candidateSolution struct {
-	solver *Solver
-	ladder *[]*words.Word
+	solver    *Solver
+	ladder    *[]*words.Word
 	seenWords map[string]bool
 }
 
@@ -63,7 +67,7 @@ func (s *candidateSolution) spawn(nextWord *words.Word) (result *candidateSoluti
 }
 
 func (s *candidateSolution) lastWord() *words.Word {
-	return (*s.ladder)[len(*s.ladder) - 1]
+	return (*s.ladder)[len(*s.ladder)-1]
 }
 
 func (s *candidateSolution) seen(word *words.Word) bool {
@@ -78,12 +82,10 @@ func (s *candidateSolution) asFoundSolution(reversed bool) (result *Solution) {
 	if reversed {
 		var l = len(*s.ladder) - 1
 		for i, w := range *s.ladder {
-			result.ladder[l - i] = w
+			result.ladder[l-i] = w
 		}
 	} else {
-		for i, w := range *s.ladder {
-			result.ladder[i] = w
-		}
+		copy(result.ladder, *s.ladder)
 	}
 	return
 }
@@ -103,6 +105,8 @@ func SortSolutions(solutions []*Solution) {
 		for idx, w := range solutions[i].ladder {
 			if w.ActualWord() < solutions[j].ladder[idx].ActualWord() {
 				return true
+			} else if w.ActualWord() > solutions[j].ladder[idx].ActualWord() {
+				return false
 			}
 		}
 		return false
