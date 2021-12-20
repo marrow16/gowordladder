@@ -70,7 +70,7 @@ type wordLinkageBuilder struct {
 
 func (b *wordLinkageBuilder) link(word *Word) {
 	for _, variant := range word.variations() {
-		var links = b.computeIfAbsent(variant)
+		links := b.computeIfAbsent(variant)
 		for _, link := range *links {
 			link.addLink(word)
 			word.addLink(link)

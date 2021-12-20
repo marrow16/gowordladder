@@ -34,7 +34,7 @@ func (s *Solver) Solve(maximumLadderLength int, async bool) (result *[]*Solution
 	s.endWord = s.puzzle.endWord
 	s.reversed = false
 
-	var diffs = s.startWord.Differences(s.endWord)
+	diffs := s.startWord.Differences(s.endWord)
 	switch diffs {
 	case 0:
 		s.addSolution(s.startWord)
@@ -88,14 +88,14 @@ func (s *Solver) Solve(maximumLadderLength int, async bool) (result *[]*Solution
 }
 
 func (s *Solver) solve(candidate *candidateSolution) {
-	var lastWord = candidate.lastWord()
+	lastWord := candidate.lastWord()
 	if *lastWord == *s.endWord {
 		*s.solutions = append(*s.solutions, candidate.asFoundSolution(s.reversed))
 		return
 	}
-	var ladderLen = len(*candidate.ladder)
+	ladderLen := len(*candidate.ladder)
 	if ladderLen < s.maximumLadderLength {
-		var newMax = s.maximumLadderLength - ladderLen
+		newMax := s.maximumLadderLength - ladderLen
 		for _, linkedWord := range *lastWord.LinkedWords {
 			if !candidate.seen(linkedWord) && s.endDistances.Reachable(linkedWord, newMax) {
 				s.solve(candidate.spawn(linkedWord))
@@ -106,16 +106,16 @@ func (s *Solver) solve(candidate *candidateSolution) {
 
 func (s *Solver) solveAsync(candidate *candidateSolution, waitGroup *sync.WaitGroup) {
 	defer waitGroup.Done()
-	var lastWord = candidate.lastWord()
+	lastWord := candidate.lastWord()
 	if *lastWord == *s.endWord {
 		s.sync.Lock()
 		defer s.sync.Unlock()
 		*s.solutions = append(*s.solutions, candidate.asFoundSolution(s.reversed))
 		return
 	}
-	var ladderLen = len(*candidate.ladder)
+	ladderLen := len(*candidate.ladder)
 	if ladderLen < s.maximumLadderLength {
-		var newMax = s.maximumLadderLength - ladderLen
+		newMax := s.maximumLadderLength - ladderLen
 		for _, linkedWord := range *lastWord.LinkedWords {
 			if !candidate.seen(linkedWord) && s.endDistances.Reachable(linkedWord, newMax) {
 				waitGroup.Add(1)
@@ -127,7 +127,7 @@ func (s *Solver) solveAsync(candidate *candidateSolution, waitGroup *sync.WaitGr
 
 func (s *Solver) shortCircuitLadderLength3() {
 	// we can determine solutions by convergence of the two linked word sets...
-	var startSet = make(map[string]*words.Word, len(*s.startWord.LinkedWords))
+	startSet := make(map[string]*words.Word, len(*s.startWord.LinkedWords))
 	for _, w := range *s.startWord.LinkedWords {
 		startSet[w.ActualWord()] = w
 	}
