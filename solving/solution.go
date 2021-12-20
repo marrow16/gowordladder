@@ -80,7 +80,7 @@ func (s *candidateSolution) seen(word *words.Word) bool {
 func (s *candidateSolution) asFoundSolution(reversed bool) (result *Solution) {
 	result = &Solution{ladder: make([]*words.Word, len(*s.ladder))}
 	if reversed {
-		var l = len(*s.ladder) - 1
+		l := len(*s.ladder) - 1
 		for i, w := range *s.ladder {
 			result.ladder[l-i] = w
 		}

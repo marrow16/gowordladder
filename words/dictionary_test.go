@@ -24,21 +24,21 @@ var expectedDictionarySizes = map[int]int{
 
 func TestCanLoadDictionariesFromFactory(t *testing.T) {
 	for k, v := range expectedDictionarySizes {
-		var dictionary = LoadDictionary(k)
+		dictionary := LoadDictionary(k)
 		test.AssertEqualsInt(t, v, dictionary.Len())
 	}
 }
 
 func TestCanLoadDictionariesFromConstructor(t *testing.T) {
 	for k, v := range expectedDictionarySizes {
-		var dictionary = NewDictionary(k)
+		dictionary := NewDictionary(k)
 		test.AssertEqualsInt(t, v, dictionary.Len())
 	}
 }
 
 func TestDictionaryFromFactorySameAsConstructed(t *testing.T) {
-	var newDict = NewDictionary(3)
-	var dictFromFactory = LoadDictionary(3)
+	newDict := NewDictionary(3)
+	dictFromFactory := LoadDictionary(3)
 	test.AssertTrue(t, newDict == dictFromFactory)
 }
 
@@ -52,24 +52,24 @@ func TestFailsToLoadInvalidWordLengths(t *testing.T) {
 }
 
 func TestDictionaryWordHasVariants(t *testing.T) {
-	var dictionary = NewDictionary(3)
-	var word, ok = dictionary.Word("cat")
+	dictionary := NewDictionary(3)
+	word, ok := dictionary.Word("cat")
 	test.AssertTrue(t, ok)
 	test.AssertEqualsInt(t, 33, len(*word.LinkedWords))
 	test.AssertFalse(t, word.IsIsland())
 }
 
 func TestDictionaryWordIsIslandWord(t *testing.T) {
-	var dictionary = NewDictionary(3)
-	var word, ok = dictionary.Word("iwi")
+	dictionary := NewDictionary(3)
+	word, ok := dictionary.Word("iwi")
 	test.AssertTrue(t, ok)
 	test.AssertTrue(t, word.IsIsland())
 	test.AssertEqualsInt(t, 0, len(*word.LinkedWords))
 }
 
 func TestDifferencesBetweenLinkedWords(t *testing.T) {
-	var dictionary = NewDictionary(3)
-	var word, ok = dictionary.Word("cat")
+	dictionary := NewDictionary(3)
+	word, ok := dictionary.Word("cat")
 	test.AssertTrue(t, ok)
 	test.AssertTrue(t, len(*word.LinkedWords) > 0)
 	for _, linkedWord := range *word.LinkedWords {
@@ -78,8 +78,8 @@ func TestDifferencesBetweenLinkedWords(t *testing.T) {
 }
 
 func TestWordsAreInterlinked(t *testing.T) {
-	var dictionary = NewDictionary(3)
-	var word, ok = dictionary.Word("cat")
+	dictionary := NewDictionary(3)
+	word, ok := dictionary.Word("cat")
 	test.AssertTrue(t, ok)
 	test.AssertTrue(t, len(*word.LinkedWords) > 0)
 	for _, linkedWord := range *word.LinkedWords {

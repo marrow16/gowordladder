@@ -21,7 +21,7 @@ func newWord(actualWord string) *Word {
 func (w *Word) variations() (result []string) {
 	result = []string{}
 	for i := range w.actualWord {
-		var patt = []rune(w.actualWord)
+		patt := []rune(w.actualWord)
 		patt[i] = '_'
 		result = append(result, string(patt))
 	}
@@ -37,7 +37,7 @@ func (w *Word) IsIsland() bool {
 }
 
 func (w *Word) Differences(other *Word) int {
-	var diffs = 0
+	diffs := 0
 	for i := range w.actualWord {
 		if w.actualWord[i] != other.actualWord[i] {
 			diffs++

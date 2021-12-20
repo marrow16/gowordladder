@@ -12,13 +12,13 @@ type WordDistanceMap struct {
 
 func NewWordDistanceMap(word *words.Word) (result *WordDistanceMap) {
 	result = &WordDistanceMap{map[string]int{}}
-	result.distances[word.ActualWord()] = 1;
+	result.distances[word.ActualWord()] = 1
 
 	var q deque.Deque
 	q.PushBack(&*word)
 	for q.Len() != 0 {
-		var nextWord = q.PopFront().(*words.Word)
-		var distance = result.distanceGetOrDefault(nextWord) + 1
+		nextWord := q.PopFront().(*words.Word)
+		distance := result.distanceGetOrDefault(nextWord) + 1
 		for _, linkedWord := range *nextWord.LinkedWords {
 			if !result.Contains(linkedWord) {
 				q.PushBack(&*linkedWord)

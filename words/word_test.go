@@ -6,7 +6,7 @@ import (
 )
 
 func TestCanCreateWord(t *testing.T) {
-	var word = newWord("cat")
+	word := newWord("cat")
 	test.AssertEqualsString(t, "CAT", word.ActualWord())
 }
 
@@ -17,8 +17,8 @@ func TestFailsWithInvalidPatternChar(t *testing.T) {
 }
 
 func TestVariationPatternsCorrect(t *testing.T) {
-	var word = newWord("cat")
-	var patts = word.variations()
+	word := newWord("cat")
+	patts := word.variations()
 	test.AssertEqualsInt(t, 3, len(patts))
 	test.AssertEqualsString(t, "_AT", patts[0])
 	test.AssertEqualsString(t, "C_T", patts[1])
@@ -26,9 +26,9 @@ func TestVariationPatternsCorrect(t *testing.T) {
 }
 
 func TestDifferencesAreCorrect(t *testing.T) {
-	var cat = newWord("cat")
-	var cot = newWord("cot")
-	var dog = newWord("dog")
+	cat := newWord("cat")
+	cot := newWord("cot")
+	dog := newWord("dog")
 	test.AssertEqualsInt(t, 0, cat.Differences(cat))
 	test.AssertEqualsInt(t, 0, cot.Differences(cot))
 	test.AssertEqualsInt(t, 0, dog.Differences(dog))

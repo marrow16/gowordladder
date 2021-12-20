@@ -7,15 +7,15 @@ import (
 )
 
 func TestSolveCatToDog(t *testing.T) {
-	var dict = words.LoadDictionary(3)
-	var cat, _ = dict.Word("cat")
-	var dog, _ = dict.Word("dog")
-	var solver = NewSolver(NewPuzzle(cat, dog))
-	var solutions = solver.Solve(4, true)
+	dict := words.LoadDictionary(3)
+	cat, _ := dict.Word("cat")
+	dog, _ := dict.Word("dog")
+	solver := NewSolver(NewPuzzle(cat, dog))
+	solutions := solver.Solve(4, true)
 	test.AssertEqualsInt(t, 4, len(*solutions))
 	test.AssertEqualsInt(t, 38, solver.ExploredCount())
 
-	var midWords = &map[string]int{}
+	midWords := &map[string]int{}
 	for _, solution := range *solutions {
 		test.AssertEqualsInt(t, 4, len(solution.ladder))
 		test.AssertEqualsString(t, "CAT", solution.ladder[0].ActualWord())
@@ -40,13 +40,13 @@ func TestSolveCatToDog(t *testing.T) {
 }
 
 func TestSolveColdToWarmAndWarmToCold(t *testing.T) {
-	var dict = words.LoadDictionary(4)
-	var cold, _ = dict.Word("cold")
-	var warm, _ = dict.Word("warm")
-	var solver = NewSolver(NewPuzzle(cold, warm))
-	var solutions = solver.Solve(5, false)
+	dict := words.LoadDictionary(4)
+	cold, _ := dict.Word("cold")
+	warm, _ := dict.Word("warm")
+	solver := NewSolver(NewPuzzle(cold, warm))
+	solutions := solver.Solve(5, false)
 	test.AssertEqualsInt(t, 7, len(*solutions))
-	var explored = solver.ExploredCount()
+	explored := solver.ExploredCount()
 	test.AssertEqualsInt(t, 33, explored)
 
 	// now do it the other way around..
@@ -57,14 +57,14 @@ func TestSolveColdToWarmAndWarmToCold(t *testing.T) {
 }
 
 func TestSolveKataToJava(t *testing.T) {
-	var dict = words.LoadDictionary(4)
-	var kata, _ = dict.Word("kata")
-	var java, _ = dict.Word("java")
-	var solver = NewSolver(NewPuzzle(kata, java))
-	var solutions = solver.Solve(3, false)
+	dict := words.LoadDictionary(4)
+	kata, _ := dict.Word("kata")
+	java, _ := dict.Word("java")
+	solver := NewSolver(NewPuzzle(kata, java))
+	solutions := solver.Solve(3, false)
 	test.AssertEqualsInt(t, 1, len(*solutions))
 
-	var solution = (*solutions)[0]
+	solution := (*solutions)[0]
 	test.AssertEqualsInt(t, 3, len(solution.ladder))
 	test.AssertEqualsString(t, "KATA", solution.ladder[0].ActualWord())
 	test.AssertEqualsString(t, "KAVA", solution.ladder[1].ActualWord())
@@ -72,40 +72,40 @@ func TestSolveKataToJava(t *testing.T) {
 }
 
 func TestSameWordSolvable(t *testing.T) {
-	var dict = words.LoadDictionary(3)
-	var cat, _ = dict.Word("cat")
-	var solver = NewSolver(NewPuzzle(cat, cat))
-	var solutions = solver.Solve(1, true)
+	dict := words.LoadDictionary(3)
+	cat, _ := dict.Word("cat")
+	solver := NewSolver(NewPuzzle(cat, cat))
+	solutions := solver.Solve(1, true)
 	test.AssertEqualsInt(t, 1, len(*solutions))
 	test.AssertEqualsInt(t, 0, solver.ExploredCount())
 }
 
 func TestOneLetterDifferenceIsSolvable(t *testing.T) {
-	var dict = words.LoadDictionary(3)
-	var cat, _ = dict.Word("cat")
-	var cot, _ = dict.Word("cot")
-	var solver = NewSolver(NewPuzzle(cat, cot))
-	var solutions = solver.Solve(2, true)
+	dict := words.LoadDictionary(3)
+	cat, _ := dict.Word("cat")
+	cot, _ := dict.Word("cot")
+	solver := NewSolver(NewPuzzle(cat, cot))
+	solutions := solver.Solve(2, true)
 	test.AssertEqualsInt(t, 1, len(*solutions))
 	test.AssertEqualsInt(t, 0, solver.ExploredCount())
 }
 
 func TestTwoLettersDifferenceIsSolvable(t *testing.T) {
-	var dict = words.LoadDictionary(3)
-	var cat, _ = dict.Word("cat")
-	var bar, _ = dict.Word("bar")
-	var solver = NewSolver(NewPuzzle(cat, bar))
-	var solutions = solver.Solve(3, true)
+	dict := words.LoadDictionary(3)
+	cat, _ := dict.Word("cat")
+	bar, _ := dict.Word("bar")
+	solver := NewSolver(NewPuzzle(cat, bar))
+	solutions := solver.Solve(3, true)
 	test.AssertEqualsInt(t, 2, len(*solutions))
 	test.AssertEqualsInt(t, 0, solver.ExploredCount())
 }
 
 func TestEverythingUnsolvableWithBadMaxLadderLength(t *testing.T) {
-	var dict = words.LoadDictionary(3)
-	var cat, _ = dict.Word("cat")
-	var dog, _ = dict.Word("dog")
-	var solver = NewSolver(NewPuzzle(cat, dog))
-	var solutions = solver.Solve(-1, true)
+	dict := words.LoadDictionary(3)
+	cat, _ := dict.Word("cat")
+	dog, _ := dict.Word("dog")
+	solver := NewSolver(NewPuzzle(cat, dog))
+	solutions := solver.Solve(-1, true)
 	test.AssertEqualsInt(t, 0, len(*solutions))
 	solutions = solver.Solve(0, true)
 	test.AssertEqualsInt(t, 0, len(*solutions))
@@ -118,11 +118,11 @@ func TestEverythingUnsolvableWithBadMaxLadderLength(t *testing.T) {
 }
 
 func TestShortCircuitOnOneLetterDifference(t *testing.T) {
-	var dict = words.LoadDictionary(3)
-	var cat, _ = dict.Word("cat")
-	var cot, _ = dict.Word("cot")
-	var solver = NewSolver(NewPuzzle(cat, cot))
-	var solutions = solver.Solve(3, true)
+	dict := words.LoadDictionary(3)
+	cat, _ := dict.Word("cat")
+	cot, _ := dict.Word("cot")
+	solver := NewSolver(NewPuzzle(cat, cot))
+	solutions := solver.Solve(3, true)
 	test.AssertEqualsInt(t, 3, len(*solutions))
 	test.AssertEqualsInt(t, 0, solver.ExploredCount())
 
