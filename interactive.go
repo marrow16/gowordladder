@@ -57,7 +57,7 @@ func (i *Interactive) Run() {
 
 		reader := bufio.NewReader(os.Stdin)
 		println("")
-		print("Run again [y/n]: ")
+		print(prompt + "Run again [y/n]: ")
 		again = false
 		if input, err := reader.ReadString('\n'); err == nil {
 			again = input[:len(input)-1] == "y"
@@ -188,7 +188,7 @@ func (i *Interactive) displaySolutions(solutions *[]*solving.Solution) {
 		if pageStart > 0 {
 			more = " more"
 		}
-		print("List" + more + " solutions? (Enter 'n' for no, 'y' or return for next 10, 'all' for all or how many): ")
+		print(prompt + "List" + more + " solutions? (Enter 'n' for no, 'y' or return for next 10, 'all' for all or how many): ")
 		reader := bufio.NewReader(os.Stdin)
 		input, err := reader.ReadString('\n')
 		if err != nil {

@@ -13,7 +13,7 @@ func TestSolveCatToDog(t *testing.T) {
 	solver := NewSolver(NewPuzzle(cat, dog))
 	solutions := solver.Solve(4, true)
 	test.AssertEqualsInt(t, 4, len(*solutions))
-	test.AssertEqualsInt(t, 38, solver.ExploredCount())
+	test.AssertEqualsInt(t, 10, solver.ExploredCount())
 
 	midWords := &map[string]int{}
 	for _, solution := range *solutions {
@@ -47,7 +47,7 @@ func TestSolveColdToWarmAndWarmToCold(t *testing.T) {
 	solutions := solver.Solve(5, false)
 	test.AssertEqualsInt(t, 7, len(*solutions))
 	explored := solver.ExploredCount()
-	test.AssertEqualsInt(t, 33, explored)
+	test.AssertEqualsInt(t, 21, explored)
 
 	// now do it the other way around..
 	solver = NewSolver(NewPuzzle(warm, cold))

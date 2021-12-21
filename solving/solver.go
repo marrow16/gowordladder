@@ -63,7 +63,8 @@ func (s *Solver) Solve(maximumLadderLength int, async bool) (result *[]*Solution
 		s.startWord = s.puzzle.endWord
 		s.endWord = s.puzzle.startWord
 	}
-	s.endDistances = NewWordDistanceMap(s.endWord)
+	limit := maximumLadderLength - 1
+	s.endDistances = NewWordDistanceMap(s.endWord, &limit)
 
 	if async {
 		s.sync = &sync.Mutex{}
