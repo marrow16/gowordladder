@@ -10,19 +10,25 @@ type WordDistanceMap struct {
 	distances map[string]int
 }
 
-func NewWordDistanceMap(word *words.Word) (result *WordDistanceMap) {
+func NewWordDistanceMap(word *words.Word, maximumLadderLength *int) (result *WordDistanceMap) {
 	result = &WordDistanceMap{map[string]int{}}
 	result.distances[word.ActualWord()] = 1
 
+	var maxDistance = 255
+	if maximumLadderLength != nil {
+		maxDistance = *maximumLadderLength
+	}
 	var q deque.Deque
 	q.PushBack(&*word)
 	for q.Len() != 0 {
 		nextWord := q.PopFront().(*words.Word)
 		distance := result.distanceGetOrDefault(nextWord) + 1
-		for _, linkedWord := range *nextWord.LinkedWords {
-			if !result.Contains(linkedWord) {
-				q.PushBack(&*linkedWord)
-				result.computeIfAbsent(linkedWord, distance)
+		if distance <= maxDistance {
+			for _, linkedWord := range *nextWord.LinkedWords {
+				if !result.Contains(linkedWord) {
+					q.PushBack(&*linkedWord)
+					result.computeIfAbsent(linkedWord, distance)
+				}
 			}
 		}
 	}
