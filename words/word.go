@@ -8,14 +8,14 @@ const reservedPatternChar = '_'
 
 type Word struct {
 	actualWord  string
-	LinkedWords *[]*Word
+	LinkedWords []*Word
 }
 
 func newWord(actualWord string) *Word {
 	if strings.Contains(actualWord, string(reservedPatternChar)) {
 		panic("Word cannot contain reserved character ('" + string(reservedPatternChar) + "')")
 	}
-	return &Word{actualWord: strings.ToUpper(actualWord), LinkedWords: &[]*Word{}}
+	return &Word{actualWord: strings.ToUpper(actualWord), LinkedWords: make([]*Word, 0)}
 }
 
 func (w *Word) variations() (result []string) {
@@ -29,11 +29,11 @@ func (w *Word) variations() (result []string) {
 }
 
 func (w *Word) addLink(otherWord *Word) {
-	*w.LinkedWords = append(*w.LinkedWords, otherWord)
+	w.LinkedWords = append(w.LinkedWords, otherWord)
 }
 
 func (w *Word) IsIsland() bool {
-	return len(*w.LinkedWords) == 0
+	return len(w.LinkedWords) == 0
 }
 
 func (w *Word) Differences(other *Word) int {

@@ -33,14 +33,14 @@ func newSolution(words ...*words.Word) *Solution {
 
 type candidateSolution struct {
 	solver    *Solver
-	ladder    *[]*words.Word
+	ladder    []*words.Word
 	seenWords map[string]bool
 }
 
 func newCandidateSolution(solver *Solver, startWord *words.Word, nextWord *words.Word) (result *candidateSolution) {
 	result = &candidateSolution{
 		solver:    solver,
-		ladder:    &[]*words.Word{},
+		ladder:    make([]*words.Word, 0),
 		seenWords: map[string]bool{},
 	}
 	result.addWord(startWord)
@@ -52,14 +52,14 @@ func newCandidateSolution(solver *Solver, startWord *words.Word, nextWord *words
 func (s *candidateSolution) spawn(nextWord *words.Word) (result *candidateSolution) {
 	result = &candidateSolution{
 		solver:    s.solver,
-		ladder:    &[]*words.Word{},
+		ladder:    make([]*words.Word, len(s.ladder)),
 		seenWords: map[string]bool{},
 	}
 	for sw := range s.seenWords {
 		result.seenWords[sw] = true
 	}
-	for _, w := range *s.ladder {
-		result.addWord(w)
+	for i, w := range s.ladder {
+		result.ladder[i] = w
 	}
 	result.addWord(nextWord)
 	s.solver.incrementExplored()
@@ -67,7 +67,7 @@ func (s *candidateSolution) spawn(nextWord *words.Word) (result *candidateSoluti
 }
 
 func (s *candidateSolution) lastWord() *words.Word {
-	return (*s.ladder)[len(*s.ladder)-1]
+	return (s.ladder)[len(s.ladder)-1]
 }
 
 func (s *candidateSolution) seen(word *words.Word) bool {
@@ -78,20 +78,20 @@ func (s *candidateSolution) seen(word *words.Word) bool {
 }
 
 func (s *candidateSolution) asFoundSolution(reversed bool) (result *Solution) {
-	result = &Solution{ladder: make([]*words.Word, len(*s.ladder))}
+	result = &Solution{ladder: make([]*words.Word, len(s.ladder))}
 	if reversed {
-		l := len(*s.ladder) - 1
-		for i, w := range *s.ladder {
+		l := len(s.ladder) - 1
+		for i, w := range s.ladder {
 			result.ladder[l-i] = w
 		}
 	} else {
-		copy(result.ladder, *s.ladder)
+		copy(result.ladder, s.ladder)
 	}
 	return
 }
 
 func (s *candidateSolution) addWord(word *words.Word) {
-	*s.ladder = append(*s.ladder, word)
+	s.ladder = append(s.ladder, word)
 	s.seenWords[word.ActualWord()] = true
 }
 

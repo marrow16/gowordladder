@@ -34,10 +34,12 @@ func (d *Dictionary) load() {
 	if err != nil {
 		panic(err)
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	scanner := bufio.NewScanner(file)
-	var builder = &wordLinkageBuilder{variations: map[string]*[]*Word{}}
+	var builder = &wordLinkageBuilder{variations: map[string][]*Word{}}
 	for scanner.Scan() {
 		d.addWord(scanner.Text(), builder)
 	}
@@ -65,28 +67,17 @@ func (d *Dictionary) addWord(actualWord string, builder *wordLinkageBuilder) {
 }
 
 type wordLinkageBuilder struct {
-	variations map[string]*[]*Word
+	variations map[string][]*Word
 }
 
 func (b *wordLinkageBuilder) link(word *Word) {
 	for _, variant := range word.variations() {
-		links := b.computeIfAbsent(variant)
-		for _, link := range *links {
+		for _, link := range b.variations[variant] {
 			link.addLink(word)
 			word.addLink(link)
 		}
-		*links = append(*links, word)
+		b.variations[variant] = append(b.variations[variant], word)
 	}
-}
-
-func (b *wordLinkageBuilder) computeIfAbsent(variant string) (result *[]*Word) {
-	if existing, ok := b.variations[variant]; !ok {
-		result = &[]*Word{}
-		b.variations[variant] = result
-	} else {
-		result = existing
-	}
-	return
 }
 
 type dictionaryCache struct {

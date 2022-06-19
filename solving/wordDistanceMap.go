@@ -24,7 +24,7 @@ func NewWordDistanceMap(word *words.Word, maximumLadderLength *int) (result *Wor
 		nextWord := q.PopFront().(*words.Word)
 		distance := result.distanceGetOrDefault(nextWord) + 1
 		if distance <= maxDistance {
-			for _, linkedWord := range *nextWord.LinkedWords {
+			for _, linkedWord := range nextWord.LinkedWords {
 				if !result.Contains(linkedWord) {
 					q.PushBack(&*linkedWord)
 					result.computeIfAbsent(linkedWord, distance)

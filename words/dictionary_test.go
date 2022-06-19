@@ -55,7 +55,7 @@ func TestDictionaryWordHasVariants(t *testing.T) {
 	dictionary := NewDictionary(3)
 	word, ok := dictionary.Word("cat")
 	test.AssertTrue(t, ok)
-	test.AssertEqualsInt(t, 33, len(*word.LinkedWords))
+	test.AssertEqualsInt(t, 33, len(word.LinkedWords))
 	test.AssertFalse(t, word.IsIsland())
 }
 
@@ -64,15 +64,15 @@ func TestDictionaryWordIsIslandWord(t *testing.T) {
 	word, ok := dictionary.Word("iwi")
 	test.AssertTrue(t, ok)
 	test.AssertTrue(t, word.IsIsland())
-	test.AssertEqualsInt(t, 0, len(*word.LinkedWords))
+	test.AssertEqualsInt(t, 0, len(word.LinkedWords))
 }
 
 func TestDifferencesBetweenLinkedWords(t *testing.T) {
 	dictionary := NewDictionary(3)
 	word, ok := dictionary.Word("cat")
 	test.AssertTrue(t, ok)
-	test.AssertTrue(t, len(*word.LinkedWords) > 0)
-	for _, linkedWord := range *word.LinkedWords {
+	test.AssertTrue(t, len(word.LinkedWords) > 0)
+	for _, linkedWord := range word.LinkedWords {
 		test.AssertEqualsInt(t, 1, word.Differences(linkedWord))
 	}
 }
@@ -81,9 +81,9 @@ func TestWordsAreInterlinked(t *testing.T) {
 	dictionary := NewDictionary(3)
 	word, ok := dictionary.Word("cat")
 	test.AssertTrue(t, ok)
-	test.AssertTrue(t, len(*word.LinkedWords) > 0)
-	for _, linkedWord := range *word.LinkedWords {
-		test.AssertTrue(t, contains(*linkedWord.LinkedWords, word))
+	test.AssertTrue(t, len(word.LinkedWords) > 0)
+	for _, linkedWord := range word.LinkedWords {
+		test.AssertTrue(t, contains(linkedWord.LinkedWords, word))
 	}
 }
 
