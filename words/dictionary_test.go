@@ -1,7 +1,7 @@
 package words
 
 import (
-	"gowordladder/test"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -25,28 +25,29 @@ var expectedDictionarySizes = map[int]int{
 func TestCanLoadDictionariesFromFactory(t *testing.T) {
 	for k, v := range expectedDictionarySizes {
 		dictionary := LoadDictionary(k)
-		test.AssertEqualsInt(t, v, dictionary.Len())
+		assert.Equal(t, v, dictionary.Len())
+		assert.Equal(t, k, dictionary.WordLength())
 	}
 }
 
 func TestCanLoadDictionariesFromConstructor(t *testing.T) {
 	for k, v := range expectedDictionarySizes {
 		dictionary := NewDictionary(k)
-		test.AssertEqualsInt(t, v, dictionary.Len())
+		assert.Equal(t, v, dictionary.Len())
 	}
 }
 
 func TestDictionaryFromFactorySameAsConstructed(t *testing.T) {
 	newDict := NewDictionary(3)
 	dictFromFactory := LoadDictionary(3)
-	test.AssertTrue(t, newDict == dictFromFactory)
+	assert.Equal(t, newDict, dictFromFactory)
 }
 
 func TestFailsToLoadInvalidWordLengths(t *testing.T) {
-	test.AssertPanic(t, func() {
+	assert.Panics(t, func() {
 		LoadDictionary(1)
 	})
-	test.AssertPanic(t, func() {
+	assert.Panics(t, func() {
 		LoadDictionary(16)
 	})
 }
@@ -54,40 +55,40 @@ func TestFailsToLoadInvalidWordLengths(t *testing.T) {
 func TestDictionaryWordHasVariants(t *testing.T) {
 	dictionary := NewDictionary(3)
 	word, ok := dictionary.Word("cat")
-	test.AssertTrue(t, ok)
-	test.AssertEqualsInt(t, 33, len(word.LinkedWords))
-	test.AssertFalse(t, word.IsIsland())
+	assert.True(t, ok)
+	assert.Equal(t, 33, len(word.LinkedWords()))
+	assert.False(t, word.IsIsland())
 }
 
 func TestDictionaryWordIsIslandWord(t *testing.T) {
 	dictionary := NewDictionary(3)
 	word, ok := dictionary.Word("iwi")
-	test.AssertTrue(t, ok)
-	test.AssertTrue(t, word.IsIsland())
-	test.AssertEqualsInt(t, 0, len(word.LinkedWords))
+	assert.True(t, ok)
+	assert.True(t, word.IsIsland())
+	assert.Equal(t, 0, len(word.LinkedWords()))
 }
 
 func TestDifferencesBetweenLinkedWords(t *testing.T) {
 	dictionary := NewDictionary(3)
 	word, ok := dictionary.Word("cat")
-	test.AssertTrue(t, ok)
-	test.AssertTrue(t, len(word.LinkedWords) > 0)
-	for _, linkedWord := range word.LinkedWords {
-		test.AssertEqualsInt(t, 1, word.Differences(linkedWord))
+	assert.True(t, ok)
+	assert.True(t, len(word.LinkedWords()) > 0)
+	for _, linkedWord := range word.LinkedWords() {
+		assert.Equal(t, 1, word.Differences(linkedWord))
 	}
 }
 
 func TestWordsAreInterlinked(t *testing.T) {
 	dictionary := NewDictionary(3)
 	word, ok := dictionary.Word("cat")
-	test.AssertTrue(t, ok)
-	test.AssertTrue(t, len(word.LinkedWords) > 0)
-	for _, linkedWord := range word.LinkedWords {
-		test.AssertTrue(t, contains(linkedWord.LinkedWords, word))
+	assert.True(t, ok)
+	assert.True(t, len(word.LinkedWords()) > 0)
+	for _, linkedWord := range word.LinkedWords() {
+		assert.True(t, contains(linkedWord.LinkedWords(), word))
 	}
 }
 
-func contains(s []*Word, e *Word) bool {
+func contains(s []Word, e Word) bool {
 	for _, a := range s {
 		if a == e {
 			return true

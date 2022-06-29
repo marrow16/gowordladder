@@ -5,6 +5,7 @@ import (
 	"gowordladder/solving"
 	"gowordladder/words"
 	"os"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -22,18 +23,18 @@ func solveNow(args []string) {
 	first := args[0]
 	var second = args[1]
 	if len(first) != len(second) {
-		panic("Words supplied as args must be same length")
+		panic(any("Words supplied as args must be same length"))
 	}
 	startTime := time.Now().UnixNano()
 	dictionary := words.LoadDictionary(len(first))
 	took := time.Now().UnixNano() - startTime
 	startWord, ok := dictionary.Word(first)
 	if !ok {
-		panic("Start word '" + first + "' does not exist in dictionary")
+		panic(any(fmt.Sprintf("Start word '%s' does not exist in dictionary", first)))
 	}
 	endWord, ok := dictionary.Word(second)
 	if !ok {
-		panic("End word '" + second + "' does not exist in dictionary")
+		panic(any(fmt.Sprintf("End word '%s' does not exist in dictionary", second)))
 	}
 	println(fmt.Sprintf("Took %dms to load dictionary", took/1000000))
 
@@ -41,7 +42,7 @@ func solveNow(args []string) {
 	var maxLadderLength int
 	if len(args) > 2 {
 		if i, err := strconv.Atoi(args[2]); err != nil {
-			panic("Cannot convert '" + args[3] + "' to int")
+			panic(any(fmt.Sprintf("Cannot convert '%s' to int", args[3])))
 		} else {
 			maxLadderLength = i
 		}
@@ -51,19 +52,36 @@ func solveNow(args []string) {
 		min, solvable := puzzle.CalculateMinimumLadderLength()
 		took = time.Now().UnixNano() - startTime
 		if !solvable {
-			panic("Cannot solve `" + first + "' to '" + second + "'!")
+			panic(any(fmt.Sprintf("Cannot solve `%s' to '%s'!", first, second)))
 		}
 		maxLadderLength = min
 		println(fmt.Sprintf("Took %dms to determine minimum ladder length of %d", took/1000000, maxLadderLength))
 	}
 	solver := solving.NewSolver(puzzle)
 	startTime = time.Now().UnixNano()
-	solutions := solver.Solve(maxLadderLength, true)
+	solutions := solver.Solve(maxLadderLength)
 	took = time.Now().UnixNano() - startTime
 	println(fmt.Sprintf("Took %dms to find %d solutions (explored %d solutions)", took/1000000, len(*solutions), solver.ExploredCount()))
-	solving.SortSolutions(*solutions)
+	SortSolutions(*solutions)
 	l := len(*solutions)
 	for i, s := range *solutions {
-		println(fmt.Sprintf("%d/%d %s", i+1, l, s.ToString()))
+		println(fmt.Sprintf("%d/%d %s", i+1, l, s.String()))
 	}
+}
+
+func SortSolutions(solutions []solving.Solution) {
+	sort.Slice(solutions, func(i, j int) bool {
+		if len(solutions[i].Ladder()) < len(solutions[j].Ladder()) {
+			return true
+		} else if len(solutions[i].Ladder()) == len(solutions[j].Ladder()) {
+			for idx, w := range solutions[i].Ladder() {
+				if w.ActualWord() < solutions[j].Ladder()[idx].ActualWord() {
+					return true
+				} else if w.ActualWord() > solutions[j].Ladder()[idx].ActualWord() {
+					return false
+				}
+			}
+		}
+		return false
+	})
 }

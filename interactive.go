@@ -32,10 +32,10 @@ var steps = []struct {
 
 type Interactive struct {
 	onStep              int
-	dictionary          *words.Dictionary
+	dictionary          words.Dictionary
 	dictionaryLoadTime  int64
-	startWord           *words.Word
-	endWord             *words.Word
+	startWord           words.Word
+	endWord             words.Word
 	maximumLadderLength int
 }
 
@@ -166,7 +166,7 @@ func (i *Interactive) solve() {
 	}
 	solver := solving.NewSolver(puzzle)
 	startTime := time.Now().UnixNano()
-	solutions := solver.Solve(i.maximumLadderLength, true)
+	solutions := solver.Solve(i.maximumLadderLength)
 	took := time.Now().UnixNano() - startTime
 	if len(*solutions) == 0 {
 		println(red(fmt.Sprintf("Took %dms to find no solutions (explored %d solutions)", took/1000000, solver.ExploredCount())))
@@ -179,8 +179,8 @@ func (i *Interactive) solve() {
 	}
 }
 
-func (i *Interactive) displaySolutions(solutions *[]*solving.Solution) {
-	solving.SortSolutions(*solutions)
+func (i *Interactive) displaySolutions(solutions *[]solving.Solution) {
+	SortSolutions(*solutions)
 	pageStart := 0
 	length := len(*solutions)
 	for pageStart < length {
@@ -207,7 +207,7 @@ func (i *Interactive) displaySolutions(solutions *[]*solving.Solution) {
 			}
 		}
 		for s := 0; s < limit && (s+pageStart) < length; s++ {
-			println(fmt.Sprintf("%d/%d", s+pageStart+1, length) + " " + green((*solutions)[s+pageStart].ToString()))
+			println(fmt.Sprintf("%d/%d", s+pageStart+1, length) + " " + green((*solutions)[s+pageStart].String()))
 		}
 		pageStart = pageStart + limit
 	}

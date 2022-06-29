@@ -2,15 +2,23 @@ package solving
 
 import (
 	"gowordladder/words"
-	"sort"
 	"strings"
 )
 
-type Solution struct {
-	ladder []*words.Word
+type Solution interface {
+	Ladder() []words.Word
+	String() string
 }
 
-func (s *Solution) ToString() string {
+type solution struct {
+	ladder []words.Word
+}
+
+func (s *solution) Ladder() []words.Word {
+	return s.ladder
+}
+
+func (s *solution) String() string {
 	var sb strings.Builder
 	sb.WriteString("[")
 	for i, w := range s.ladder {
@@ -23,24 +31,20 @@ func (s *Solution) ToString() string {
 	return sb.String()
 }
 
-func (s *Solution) len() int {
-	return len(s.ladder)
-}
-
-func newSolution(words ...*words.Word) *Solution {
-	return &Solution{ladder: words}
+func newSolution(words ...words.Word) Solution {
+	return &solution{ladder: words}
 }
 
 type candidateSolution struct {
-	solver    *Solver
-	ladder    []*words.Word
+	solver    incrementable
+	ladder    []words.Word
 	seenWords map[string]bool
 }
 
-func newCandidateSolution(solver *Solver, startWord *words.Word, nextWord *words.Word) (result *candidateSolution) {
+func newCandidateSolution(solver incrementable, startWord words.Word, nextWord words.Word) (result *candidateSolution) {
 	result = &candidateSolution{
 		solver:    solver,
-		ladder:    make([]*words.Word, 0),
+		ladder:    make([]words.Word, 0),
 		seenWords: map[string]bool{},
 	}
 	result.addWord(startWord)
@@ -49,10 +53,10 @@ func newCandidateSolution(solver *Solver, startWord *words.Word, nextWord *words
 	return
 }
 
-func (s *candidateSolution) spawn(nextWord *words.Word) (result *candidateSolution) {
+func (s *candidateSolution) spawn(nextWord words.Word) (result *candidateSolution) {
 	result = &candidateSolution{
 		solver:    s.solver,
-		ladder:    make([]*words.Word, len(s.ladder)),
+		ladder:    make([]words.Word, len(s.ladder)),
 		seenWords: map[string]bool{},
 	}
 	for sw := range s.seenWords {
@@ -66,19 +70,16 @@ func (s *candidateSolution) spawn(nextWord *words.Word) (result *candidateSoluti
 	return
 }
 
-func (s *candidateSolution) lastWord() *words.Word {
+func (s *candidateSolution) lastWord() words.Word {
 	return (s.ladder)[len(s.ladder)-1]
 }
 
-func (s *candidateSolution) seen(word *words.Word) bool {
-	if _, ok := s.seenWords[word.ActualWord()]; ok {
-		return true
-	}
-	return false
+func (s *candidateSolution) seen(word words.Word) bool {
+	return s.seenWords[word.ActualWord()]
 }
 
-func (s *candidateSolution) asFoundSolution(reversed bool) (result *Solution) {
-	result = &Solution{ladder: make([]*words.Word, len(s.ladder))}
+func (s *candidateSolution) asFoundSolution(reversed bool) Solution {
+	result := &solution{ladder: make([]words.Word, len(s.ladder))}
 	if reversed {
 		l := len(s.ladder) - 1
 		for i, w := range s.ladder {
@@ -87,28 +88,10 @@ func (s *candidateSolution) asFoundSolution(reversed bool) (result *Solution) {
 	} else {
 		copy(result.ladder, s.ladder)
 	}
-	return
+	return result
 }
 
-func (s *candidateSolution) addWord(word *words.Word) {
+func (s *candidateSolution) addWord(word words.Word) {
 	s.ladder = append(s.ladder, word)
 	s.seenWords[word.ActualWord()] = true
-}
-
-func SortSolutions(solutions []*Solution) {
-	sort.Slice(solutions, func(i, j int) bool {
-		if len(solutions[i].ladder) < len(solutions[j].ladder) {
-			return true
-		} else if len(solutions[i].ladder) != len(solutions[j].ladder) {
-			return false
-		}
-		for idx, w := range solutions[i].ladder {
-			if w.ActualWord() < solutions[j].ladder[idx].ActualWord() {
-				return true
-			} else if w.ActualWord() > solutions[j].ladder[idx].ActualWord() {
-				return false
-			}
-		}
-		return false
-	})
 }
