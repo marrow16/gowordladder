@@ -11,17 +11,18 @@ import (
 )
 
 func main() {
-	args := os.Args
+	args := os.Args[1:]
 	if len(args) >= 3 {
-		solveNow(args[1:])
+		solveNow(args)
 	} else {
-		NewInteractive(args[1:]).Run()
+		NewInteractive(args).Run()
 	}
 }
 
 func solveNow(args []string) {
 	first := args[0]
-	var second = args[1]
+	second := args[1]
+	third := args[2]
 	if len(first) != len(second) {
 		panic(any("Words supplied as args must be same length"))
 	}
@@ -40,13 +41,8 @@ func solveNow(args []string) {
 
 	puzzle := solving.NewPuzzle(startWord, endWord)
 	var maxLadderLength int
-	if len(args) > 2 {
-		if i, err := strconv.Atoi(args[2]); err != nil {
-			panic(any(fmt.Sprintf("Cannot convert '%s' to int", args[3])))
-		} else {
-			maxLadderLength = i
-		}
-		println("Using specified maximum ladder length " + fmt.Sprintf("%d", maxLadderLength))
+	if i, err := strconv.Atoi(third); err == nil && i > 0 {
+		maxLadderLength = i
 	} else {
 		startTime = time.Now().UnixNano()
 		min, solvable := puzzle.CalculateMinimumLadderLength()
@@ -57,14 +53,16 @@ func solveNow(args []string) {
 		maxLadderLength = min
 		println(fmt.Sprintf("Took %dms to determine minimum ladder length of %d", took/1000000, maxLadderLength))
 	}
+	println(fmt.Sprintf("Solving %s to %s (maximum steps: %d)",
+		green(startWord.ActualWord()), green(endWord.ActualWord()), maxLadderLength))
 	solver := solving.NewSolver(puzzle)
 	startTime = time.Now().UnixNano()
 	solutions := solver.Solve(maxLadderLength)
 	took = time.Now().UnixNano() - startTime
-	println(fmt.Sprintf("Took %dms to find %d solutions (explored %d solutions)", took/1000000, len(*solutions), solver.ExploredCount()))
-	SortSolutions(*solutions)
-	l := len(*solutions)
-	for i, s := range *solutions {
+	println(fmt.Sprintf("Took %dms to find %d solutions (explored %d solutions)", took/1000000, len(solutions), solver.ExploredCount()))
+	SortSolutions(solutions)
+	l := len(solutions)
+	for i, s := range solutions {
 		println(fmt.Sprintf("%d/%d %s", i+1, l, s.String()))
 	}
 }

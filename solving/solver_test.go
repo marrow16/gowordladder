@@ -12,11 +12,11 @@ func TestSolveCatToDog(t *testing.T) {
 	dog, _ := dict.Word("dog")
 	solver := NewSolver(NewPuzzle(cat, dog))
 	solutions := solver.Solve(4)
-	assert.Equal(t, 4, len(*solutions))
+	assert.Equal(t, 4, len(solutions))
 	assert.Equal(t, 10, solver.ExploredCount())
 
 	midWords := &map[string]int{}
-	for _, solution := range *solutions {
+	for _, solution := range solutions {
 		assert.Equal(t, 4, len(solution.Ladder()))
 		assert.Equal(t, "CAT", solution.Ladder()[0].ActualWord())
 		assert.Equal(t, "DOG", solution.Ladder()[3].ActualWord())
@@ -45,14 +45,14 @@ func TestSolveColdToWarmAndWarmToCold(t *testing.T) {
 	warm, _ := dict.Word("warm")
 	solver := NewSolver(NewPuzzle(cold, warm))
 	solutions := solver.Solve(5)
-	assert.Equal(t, 7, len(*solutions))
+	assert.Equal(t, 7, len(solutions))
 	explored := solver.ExploredCount()
 	assert.Equal(t, 21, explored)
 
-	// now do it the other way around..
+	// now do it the other way around...
 	solver = NewSolver(NewPuzzle(warm, cold))
 	solutions = solver.Solve(5)
-	assert.Equal(t, 7, len(*solutions))
+	assert.Equal(t, 7, len(solutions))
 	assert.Equal(t, explored, solver.ExploredCount())
 }
 
@@ -62,9 +62,9 @@ func TestSolveKataToJava(t *testing.T) {
 	java, _ := dict.Word("java")
 	solver := NewSolver(NewPuzzle(kata, java))
 	solutions := solver.Solve(3)
-	assert.Equal(t, 1, len(*solutions))
+	assert.Equal(t, 1, len(solutions))
 
-	solution := (*solutions)[0]
+	solution := solutions[0]
 	assert.Equal(t, 3, len(solution.Ladder()))
 	assert.Equal(t, "KATA", solution.Ladder()[0].ActualWord())
 	assert.Equal(t, "KAVA", solution.Ladder()[1].ActualWord())
@@ -76,7 +76,7 @@ func TestSameWordSolvable(t *testing.T) {
 	cat, _ := dict.Word("cat")
 	solver := NewSolver(NewPuzzle(cat, cat))
 	solutions := solver.Solve(1)
-	assert.Equal(t, 1, len(*solutions))
+	assert.Equal(t, 1, len(solutions))
 	assert.Equal(t, 0, solver.ExploredCount())
 }
 
@@ -86,7 +86,7 @@ func TestOneLetterDifferenceIsSolvable(t *testing.T) {
 	cot, _ := dict.Word("cot")
 	solver := NewSolver(NewPuzzle(cat, cot))
 	solutions := solver.Solve(2)
-	assert.Equal(t, 1, len(*solutions))
+	assert.Equal(t, 1, len(solutions))
 	assert.Equal(t, 0, solver.ExploredCount())
 }
 
@@ -96,7 +96,7 @@ func TestTwoLettersDifferenceIsSolvable(t *testing.T) {
 	bar, _ := dict.Word("bar")
 	solver := NewSolver(NewPuzzle(cat, bar))
 	solutions := solver.Solve(3)
-	assert.Equal(t, 2, len(*solutions))
+	assert.Equal(t, 2, len(solutions))
 	assert.Equal(t, 0, solver.ExploredCount())
 }
 
@@ -106,15 +106,15 @@ func TestEverythingUnsolvableWithBadMaxLadderLength(t *testing.T) {
 	dog, _ := dict.Word("dog")
 	solver := NewSolver(NewPuzzle(cat, dog))
 	solutions := solver.Solve(-1)
-	assert.Equal(t, 0, len(*solutions))
+	assert.Equal(t, 0, len(solutions))
 	solutions = solver.Solve(0)
-	assert.Equal(t, 0, len(*solutions))
+	assert.Equal(t, 0, len(solutions))
 	solutions = solver.Solve(2)
-	assert.Equal(t, 0, len(*solutions))
+	assert.Equal(t, 0, len(solutions))
 	solutions = solver.Solve(3)
-	assert.Equal(t, 0, len(*solutions))
+	assert.Equal(t, 0, len(solutions))
 	solutions = solver.Solve(4)
-	assert.True(t, len(*solutions) > 0)
+	assert.True(t, len(solutions) > 0)
 }
 
 func TestShortCircuitOnOneLetterDifference(t *testing.T) {
@@ -123,10 +123,10 @@ func TestShortCircuitOnOneLetterDifference(t *testing.T) {
 	cot, _ := dict.Word("cot")
 	solver := NewSolver(NewPuzzle(cat, cot))
 	solutions := solver.Solve(3)
-	assert.Equal(t, 3, len(*solutions))
+	assert.Equal(t, 3, len(solutions))
 	assert.Equal(t, 0, solver.ExploredCount())
 
-	assert.Equal(t, 2, len((*solutions)[0].Ladder()))
-	assert.Equal(t, 3, len((*solutions)[1].Ladder()))
-	assert.Equal(t, 3, len((*solutions)[2].Ladder()))
+	assert.Equal(t, 2, len(solutions[0].Ladder()))
+	assert.Equal(t, 3, len(solutions[1].Ladder()))
+	assert.Equal(t, 3, len(solutions[2].Ladder()))
 }

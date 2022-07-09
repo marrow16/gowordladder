@@ -8,13 +8,14 @@ import (
 type Solver struct {
 	puzzle              *Puzzle
 	exploredCount       int
-	solutions           *[]Solution
+	solutions           []Solution
 	startWord           words.Word
 	endWord             words.Word
 	reversed            bool
 	maximumLadderLength int
 	endDistances        WordDistanceMap
 	sync                *sync.Mutex
+	waitGroup           *sync.WaitGroup
 }
 
 type incrementable interface {
@@ -22,17 +23,18 @@ type incrementable interface {
 }
 
 func NewSolver(puzzle *Puzzle) (result *Solver) {
-	result = &Solver{puzzle: puzzle}
-	return
+	return &Solver{
+		puzzle: puzzle,
+		sync:   &sync.Mutex{},
+	}
 }
 
-func (s *Solver) Solve(maximumLadderLength int) (result *[]Solution) {
+func (s *Solver) Solve(maximumLadderLength int) []Solution {
 	s.exploredCount = 0
-	s.solutions = &[]Solution{}
-	result = &*s.solutions
+	s.solutions = make([]Solution, 0)
 	s.maximumLadderLength = maximumLadderLength
 	if maximumLadderLength < 1 {
-		return
+		return s.solutions
 	}
 	s.startWord = s.puzzle.startWord
 	s.endWord = s.puzzle.endWord
@@ -41,22 +43,22 @@ func (s *Solver) Solve(maximumLadderLength int) (result *[]Solution) {
 	diffs := s.startWord.Differences(s.endWord)
 	switch diffs {
 	case 0:
-		s.addSolution(s.startWord)
-		return
+		s.addSolution(newSolution(s.startWord))
+		return s.solutions
 	case 1:
-		s.addSolution(s.startWord, s.endWord)
+		s.addSolution(newSolution(s.startWord, s.endWord))
 		switch maximumLadderLength {
 		case 2:
-			// maximum ladder is 2 so we already have the only answer...
-			return
+			// maximum ladder is 2 - so we already have the only answer...
+			return s.solutions
 		case 3:
 			s.shortCircuitLadderLength3()
-			return
+			return s.solutions
 		}
 	case 2:
 		if maximumLadderLength == 3 {
 			s.shortCircuitLadderLength3()
-			return
+			return s.solutions
 		}
 	}
 
@@ -70,27 +72,24 @@ func (s *Solver) Solve(maximumLadderLength int) (result *[]Solution) {
 	limit := maximumLadderLength - 1
 	s.endDistances = NewWordDistanceMap(s.endWord, &limit)
 
-	s.sync = &sync.Mutex{}
-	var waitGroup sync.WaitGroup
-	defer waitGroup.Wait()
-	waitGroup.Add(1)
+	s.waitGroup = &sync.WaitGroup{}
 	for _, linkedWord := range s.startWord.LinkedWords() {
 		if s.endDistances.Reachable(linkedWord, maximumLadderLength) {
-			waitGroup.Add(1)
-			go s.solve(newCandidateSolution(s, s.startWord, linkedWord), &waitGroup)
+			s.waitGroup.Add(1)
+			go s.explore(newCandidateSolution(s, s.startWord, linkedWord))
 		}
 	}
-	waitGroup.Done()
-	return
+	s.waitGroup.Wait()
+	return s.solutions
 }
 
-func (s *Solver) solve(candidate *candidateSolution, waitGroup *sync.WaitGroup) {
-	defer waitGroup.Done()
+func (s *Solver) explore(candidate *candidateSolution) {
+	defer s.waitGroup.Done()
 	lastWord := candidate.lastWord()
 	if lastWord == s.endWord {
 		s.sync.Lock()
 		defer s.sync.Unlock()
-		*s.solutions = append(*s.solutions, candidate.asFoundSolution(s.reversed))
+		s.addSolution(candidate.asFoundSolution(s.reversed))
 		return
 	}
 	ladderLen := len(candidate.ladder)
@@ -98,8 +97,8 @@ func (s *Solver) solve(candidate *candidateSolution, waitGroup *sync.WaitGroup) 
 		newMax := s.maximumLadderLength - ladderLen
 		for _, linkedWord := range lastWord.LinkedWords() {
 			if !candidate.seen(linkedWord) && s.endDistances.Reachable(linkedWord, newMax) {
-				waitGroup.Add(1)
-				go s.solve(candidate.spawn(linkedWord), waitGroup)
+				s.waitGroup.Add(1)
+				go s.explore(candidate.spawn(linkedWord))
 			}
 		}
 	}
@@ -113,13 +112,13 @@ func (s *Solver) shortCircuitLadderLength3() {
 	}
 	for _, w := range s.endWord.LinkedWords() {
 		if _, ok := startSet[w.ActualWord()]; ok {
-			s.addSolution(s.startWord, w, s.endWord)
+			s.addSolution(newSolution(s.startWord, w, s.endWord))
 		}
 	}
 }
 
-func (s *Solver) addSolution(words ...words.Word) {
-	*s.solutions = append(*s.solutions, newSolution(words...))
+func (s *Solver) addSolution(sol Solution) {
+	s.solutions = append(s.solutions, sol)
 }
 
 func (s *Solver) incrementExplored() {
