@@ -32,17 +32,28 @@ var steps = []struct {
 
 type Interactive struct {
 	onStep              int
-	dictionary          *words.Dictionary
+	dictionary          words.Dictionary
 	dictionaryLoadTime  int64
-	startWord           *words.Word
-	endWord             *words.Word
+	startWord           words.Word
+	endWord             words.Word
 	maximumLadderLength int
 }
 
-func NewInteractive(args []string) (result *Interactive) {
-	result = &Interactive{onStep: 0}
-	// TODO fill steps from args
-	return
+func NewInteractive(args []string) *Interactive {
+	result := &Interactive{onStep: 0}
+	if len(args) >= 1 {
+		println(steps[0].prompt + green(args[0]))
+		if result.setStartWord(args[0]) {
+			result.onStep++
+			if len(args) >= 2 {
+				println(steps[1].prompt + green(args[1]))
+				if result.setEndWord(args[1]) {
+					result.onStep++
+				}
+			}
+		}
+	}
+	return result
 }
 
 func (i *Interactive) Run() {
@@ -67,8 +78,9 @@ func (i *Interactive) Run() {
 
 func (i *Interactive) processStepInput() {
 	reader := bufio.NewReader(os.Stdin)
-	print(steps[i.onStep].prompt)
+	print(steps[i.onStep].prompt + terminalColourGreen)
 	input, err := reader.ReadString('\n')
+	print(terminalColourBlack)
 	if err != nil {
 		println(red(fmt.Sprintf("Error: %s", err)))
 		return
@@ -166,23 +178,23 @@ func (i *Interactive) solve() {
 	}
 	solver := solving.NewSolver(puzzle)
 	startTime := time.Now().UnixNano()
-	solutions := solver.Solve(i.maximumLadderLength, true)
+	solutions := solver.Solve(i.maximumLadderLength)
 	took := time.Now().UnixNano() - startTime
-	if len(*solutions) == 0 {
+	if len(solutions) == 0 {
 		println(red(fmt.Sprintf("Took %dms to find no solutions (explored %d solutions)", took/1000000, solver.ExploredCount())))
 	} else {
 		println(
 			"Took " + green(fmt.Sprintf("%dms", took/1000000)) +
-				" to find " + green(fmt.Sprintf("%d", len(*solutions))) +
+				" to find " + green(fmt.Sprintf("%d", len(solutions))) +
 				" solutions (explored " + green(fmt.Sprintf("%d", solver.ExploredCount())) + " solutions)")
 		i.displaySolutions(solutions)
 	}
 }
 
-func (i *Interactive) displaySolutions(solutions *[]*solving.Solution) {
-	solving.SortSolutions(*solutions)
+func (i *Interactive) displaySolutions(solutions []solving.Solution) {
+	SortSolutions(solutions)
 	pageStart := 0
-	length := len(*solutions)
+	length := len(solutions)
 	for pageStart < length {
 		more := ""
 		if pageStart > 0 {
@@ -207,7 +219,7 @@ func (i *Interactive) displaySolutions(solutions *[]*solving.Solution) {
 			}
 		}
 		for s := 0; s < limit && (s+pageStart) < length; s++ {
-			println(fmt.Sprintf("%d/%d", s+pageStart+1, length) + " " + green((*solutions)[s+pageStart].ToString()))
+			println(fmt.Sprintf("%d/%d", s+pageStart+1, length) + " " + green(solutions[s+pageStart].String()))
 		}
 		pageStart = pageStart + limit
 	}
