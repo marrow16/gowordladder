@@ -103,8 +103,8 @@ This table shows the spread of adjacent word counts for each word in the diction
 | `TROUTING` | `CRIMPING` | `CRIMPING` |
 | `TROUPING` | `CRUMPING` | `CRUMPING` |
 | `TROMPING` | `TRUMPING` | `TRUMPING` |
-| `TRUMPING` | `TROMPING` | `TROMPING` |
-| `CRUMPING` | `TROUPING` | `TROUPING` |
+| `TRAMPING` | `TROMPING` | `TROMPING` |
+| `CRAMPING` | `TROUPING` | `TROUPING` |
 | `CRIMPING` | `TROUTING` | `TROUTING` |
 | `CRISPING` | `TROTTING` | `TROTTING` |
 | `CRISPINS` | `TROTHING` | `TROTHING` |
@@ -118,9 +118,9 @@ This table shows the spread of adjacent word counts for each word in the diction
 | `CHARPIES` | `WINKLING` | `WINKLING` |
 | `SHARPIES` | `TINKLING` | `TINKLING` |
 | `SHARNIES` | `TICKLING` | `TICKLING` |
-| `SHANNIES` | `SICKLING` | `TACKLING` |
-| `SHANTIES` | `SUCKLING` | `HACKLING` |
-| `SCANTIES` | `RUCKLING` | `HECKLING` |
+| `SHANNIES` | `SICKLING` | `SICKLING` |
+| `SHANTIES` | `SUCKLING` | `SUCKLING` |
+| `SCANTIES` | `RUCKLING` | `RUCKLING` |
 | `SCANTIER` | `RECKLING` | `RECKLING` |
 | `SLANTIER` | `RECULING` | `RECULING` |
 | `SLANGIER` | `RECURING` | `RECURING` |
@@ -140,7 +140,7 @@ This table shows the spread of adjacent word counts for each word in the diction
 | `STUDDLES` | `DOVENING` | `DOVENING` |
 | `STADDLES` | `DOVERING` | `DOVERING` |
 | `SWADDLES` | `DOWERING` | `DOWERING` |
-| `TWADDLES` | `TOWERING` | `DOWELING` |
+| `TWADDLES` | `TOWERING` | `TOWERING` |
 | `TWIDDLES` | `TOWELING` | `TOWELING` |
-| `TWIDDLED` | `TOWNLING` | `TOWNLING` |
+| `TWIDDLER` | `TOWNLING` | `TOWNLING` |
 | 143 alternatives | 143 alternatives | 143 alternatives |

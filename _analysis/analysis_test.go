@@ -23,6 +23,13 @@ func TestAnalysisReport(t *testing.T) {
 	f, err := os.Create("Analysis.md")
 	require.NoError(t, err)
 	defer f.Close()
+	fCsv1, err := os.Create("analysis.csv")
+	require.NoError(t, err)
+	defer fCsv1.Close()
+	fCsv2, err := os.Create("adjacents.csv")
+	require.NoError(t, err)
+	defer fCsv2.Close()
+
 	fmt.Fprint(f, "# Analysis Report\n\n")
 
 	// collect statistics...
@@ -69,6 +76,11 @@ func TestAnalysisReport(t *testing.T) {
 	fmt.Fprint(f, "* Drop% – percentage decrease from ladder length 2 to 3, representing initial connectivity decay\n")
 	fmt.Fprint(f, "* Longest - is the longest possible ladder length for the dictionary\n")
 	fmt.Fprint(f, "* Numeric columns - are the number of words that can form that ladder length\n\n")
+	fmt.Fprint(fCsv1, "Letters,Words,Islands,Doublets,Longest")
+	for i := 2; i <= bigMax; i++ {
+		fmt.Fprintf(fCsv1, ",%d", i)
+	}
+	fmt.Fprint(fCsv1, "\n")
 	fmt.Fprint(f, "| Letters | Words | Islands |   %  | Doublets |   %  | LDS% |  Var | Drop% | Longest |")
 	for i := 2; i <= bigMax; i++ {
 		fmt.Fprintf(f, "%6d |", i)
@@ -98,6 +110,15 @@ func TestAnalysisReport(t *testing.T) {
 			}
 		}
 		fmt.Fprintf(f, "\n")
+		fmt.Fprintf(fCsv1, "%d,%d,%d,%d,%d", wl, counts[wl-1], islands[wl-1], doublets[wl-1], longests[wl-1])
+		for i := 2; i <= bigMax; i++ {
+			if n := m[i]; n == 0 {
+				fmt.Fprint(fCsv1, ",")
+			} else {
+				fmt.Fprintf(fCsv1, ",%d", n)
+			}
+		}
+		fmt.Fprint(fCsv1, "\n")
 	}
 	fmt.Fprint(f, "\nObservation notes:\n")
 	fmt.Fprint(f, "1. word - islands = ladder length 2 words\n")
@@ -134,6 +155,11 @@ func TestAnalysisReport(t *testing.T) {
 		fmt.Fprint(f, strings.Repeat("-", 6)+":|")
 	}
 	fmt.Fprint(f, "\n")
+	fmt.Fprint(fCsv2, "Letters")
+	for i := 0; i <= adjMax; i++ {
+		fmt.Fprintf(fCsv2, ",%d", i)
+	}
+	fmt.Fprint(fCsv2, "\n")
 	for wl := 2; wl <= 15; wl++ {
 		m := adjacents[wl-2]
 		fmt.Fprintf(f, "| %7d |", wl)
@@ -145,6 +171,15 @@ func TestAnalysisReport(t *testing.T) {
 			}
 		}
 		fmt.Fprint(f, "\n")
+		fmt.Fprintf(fCsv2, "%d", wl)
+		for i := 0; i <= adjMax; i++ {
+			if n := m[i]; n == 0 {
+				fmt.Fprint(fCsv2, ",")
+			} else {
+				fmt.Fprintf(fCsv2, ",%d", n)
+			}
+		}
+		fmt.Fprint(fCsv2, "\n")
 	}
 	// chart...
 	fmt.Fprint(f, "\n![Chart]("+adjacentsChartFilename+")")
