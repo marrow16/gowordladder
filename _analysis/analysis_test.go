@@ -103,7 +103,7 @@ func TestAnalysisReport(t *testing.T) {
 	fmt.Fprint(f, "1. word - islands = ladder length 2 words\n")
 	fmt.Fprint(f, "2. word - islands - doublets = ladder length 3 words\n\n")
 	// chart...
-	fmt.Fprint(f, "![Chart]("+analysisChartFilename+")")
+	fmt.Fprint(f, "\n![Chart]("+analysisChartFilename+")")
 	analysisChart(stats, bigMax)
 
 	// adjacents table...
@@ -147,7 +147,7 @@ func TestAnalysisReport(t *testing.T) {
 		fmt.Fprint(f, "\n")
 	}
 	// chart...
-	fmt.Fprint(f, "![Chart]("+adjacentsChartFilename+")")
+	fmt.Fprint(f, "\n![Chart]("+adjacentsChartFilename+")")
 	adjacentsChart(adjacents, adjMax, counts)
 
 	// longest ladders...

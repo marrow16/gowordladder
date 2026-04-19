@@ -31,6 +31,7 @@ Observation notes:
 1. word - islands = ladder length 2 words
 2. word - islands - doublets = ladder length 3 words
 
+
 ![Chart](analysis.png)
 
 ### Adjacent Counts Table
@@ -53,6 +54,7 @@ This table shows the spread of adjacent word counts for each word in the diction
 |      13 | 10281 |  3216 |   675 |   146 |    23 |     4 |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |
 |      14 |  6788 |  2003 |   488 |    91 |    19 |     8 |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |
 |      15 |  4273 |  1358 |   255 |    34 |     5 |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |
+
 ![Chart](adjacents.png)
 
 ### Longest Ladders
@@ -99,8 +101,8 @@ This table shows the spread of adjacent word counts for each word in the diction
 | `TROTHING` | `CRISPINS` | `CRISPINS` |
 | `TROTTING` | `CRISPING` | `CRISPING` |
 | `TROUTING` | `CRIMPING` | `CRIMPING` |
-| `TROUPING` | `CRUMPING` | `CRAMPING` |
-| `TROMPING` | `TRUMPING` | `TRAMPING` |
+| `TROUPING` | `CRUMPING` | `CRUMPING` |
+| `TROMPING` | `TRUMPING` | `TRUMPING` |
 | `TRUMPING` | `TROMPING` | `TROMPING` |
 | `CRUMPING` | `TROUPING` | `TROUPING` |
 | `CRIMPING` | `TROUTING` | `TROUTING` |
@@ -116,9 +118,9 @@ This table shows the spread of adjacent word counts for each word in the diction
 | `CHARPIES` | `WINKLING` | `WINKLING` |
 | `SHARPIES` | `TINKLING` | `TINKLING` |
 | `SHARNIES` | `TICKLING` | `TICKLING` |
-| `SHANNIES` | `SICKLING` | `SICKLING` |
-| `SHANTIES` | `SUCKLING` | `SUCKLING` |
-| `SCANTIES` | `RUCKLING` | `RUCKLING` |
+| `SHANNIES` | `SICKLING` | `TACKLING` |
+| `SHANTIES` | `SUCKLING` | `HACKLING` |
+| `SCANTIES` | `RUCKLING` | `HECKLING` |
 | `SCANTIER` | `RECKLING` | `RECKLING` |
 | `SLANTIER` | `RECULING` | `RECULING` |
 | `SLANGIER` | `RECURING` | `RECURING` |
@@ -138,7 +140,7 @@ This table shows the spread of adjacent word counts for each word in the diction
 | `STUDDLES` | `DOVENING` | `DOVENING` |
 | `STADDLES` | `DOVERING` | `DOVERING` |
 | `SWADDLES` | `DOWERING` | `DOWERING` |
-| `TWADDLES` | `TOWERING` | `TOWERING` |
+| `TWADDLES` | `TOWERING` | `DOWELING` |
 | `TWIDDLES` | `TOWELING` | `TOWELING` |
 | `TWIDDLED` | `TOWNLING` | `TOWNLING` |
 | 143 alternatives | 143 alternatives | 143 alternatives |
