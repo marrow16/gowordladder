@@ -6,18 +6,18 @@ import (
 )
 
 func TestCanCreateWord(t *testing.T) {
-	w := newWord("cat")
+	w := newWord("cat", 0)
 	assert.Equal(t, "CAT", w.ActualWord())
 }
 
 func TestFailsWithInvalidPatternChar(t *testing.T) {
 	assert.Panics(t, func() {
-		newWord("c" + string(reservedPatternChar) + "t")
+		newWord("c"+string(reservedPatternChar)+"t", 0)
 	})
 }
 
 func TestVariationPatternsCorrect(t *testing.T) {
-	w := newWord("cat")
+	w := newWord("cat", 0)
 	patts := w.Variations()
 	assert.Equal(t, 3, len(patts))
 	assert.Equal(t, "_AT", patts[0])
@@ -26,9 +26,9 @@ func TestVariationPatternsCorrect(t *testing.T) {
 }
 
 func TestDifferencesAreCorrect(t *testing.T) {
-	cat := newWord("cat")
-	cot := newWord("cot")
-	dog := newWord("dog")
+	cat := newWord("cat", 0)
+	cot := newWord("cot", 0)
+	dog := newWord("dog", 0)
 	assert.Equal(t, 0, cat.Differences(cat))
 	assert.Equal(t, 0, cot.Differences(cot))
 	assert.Equal(t, 0, dog.Differences(dog))
@@ -41,17 +41,17 @@ func TestDifferencesAreCorrect(t *testing.T) {
 }
 
 func TestWord_LinkedWords(t *testing.T) {
-	w := newWord("xxx")
+	w := newWord("xxx", 0)
 	assert.Equal(t, 0, len(w.LinkedWords()))
 
-	w.addLink(newWord("yyy"))
+	w.addLink(newWord("yyy", 0))
 	assert.Equal(t, 1, len(w.LinkedWords()))
 }
 
 func TestWord_IsIsland(t *testing.T) {
-	w := newWord("xxx")
+	w := newWord("xxx", 0)
 	assert.True(t, w.IsIsland())
 
-	w.addLink(newWord("yyy"))
+	w.addLink(newWord("yyy", 0))
 	assert.False(t, w.IsIsland())
 }

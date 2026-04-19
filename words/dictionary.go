@@ -2,7 +2,8 @@ package words
 
 import (
 	"bufio"
-	"embed"
+	"fmt"
+	"gowordladder/words/resources"
 	"strconv"
 	"strings"
 	"sync"
@@ -12,19 +13,25 @@ type Dictionary interface {
 	Word(s string) (word Word, ok bool)
 	Len() int
 	WordLength() int
+	MaxSteps() int
+	WordsWithSteps(steps int) []Word
+	Words() []Word
 }
 
 type dictionary struct {
-	wordLength int
-	words      map[string]Word
+	wordLength   int
+	words        map[string]Word
+	wordsBySteps map[int][]Word
+	maxSteps     int
 }
 
 func NewDictionary(wordLength int) Dictionary {
 	var result Dictionary
 	if existing, ok := cache.dictionaries[wordLength]; !ok {
 		newDict := &dictionary{
-			wordLength: wordLength,
-			words:      map[string]Word{},
+			wordLength:   wordLength,
+			words:        make(map[string]Word),
+			wordsBySteps: make(map[int][]Word),
 		}
 		newDict.load()
 		cache.dictionaries[wordLength] = newDict
@@ -35,11 +42,8 @@ func NewDictionary(wordLength int) Dictionary {
 	return result
 }
 
-//go:embed *
-var resources embed.FS
-
 func (d *dictionary) load() {
-	file, err := resources.Open("resources/dictionary-" + strconv.Itoa(d.wordLength) + "-letter-words.txt")
+	file, err := resources.Files.Open("dictionary-" + strconv.Itoa(d.wordLength) + "-letter-words.txt")
 	if err != nil {
 		panic(any(err.Error()))
 	}
@@ -48,7 +52,7 @@ func (d *dictionary) load() {
 	}()
 
 	scanner := bufio.NewScanner(file)
-	var builder = &wordLinkageBuilder{variations: map[string][]Word{}}
+	builder := &wordLinkageBuilder{variations: map[string][]Word{}}
 	for scanner.Scan() {
 		d.addWord(scanner.Text(), builder)
 	}
@@ -63,15 +67,42 @@ func (d *dictionary) Len() int {
 	return len(d.words)
 }
 
+func (d *dictionary) MaxSteps() int {
+	return d.maxSteps
+}
+
 func (d *dictionary) WordLength() int {
 	return d.wordLength
 }
 
-func (d *dictionary) addWord(actualWord string, builder *wordLinkageBuilder) {
-	if len(actualWord) == d.wordLength {
-		var word = newWord(actualWord)
-		d.words[word.ActualWord()] = word
-		builder.link(word)
+func (d *dictionary) WordsWithSteps(steps int) []Word {
+	return d.wordsBySteps[steps]
+}
+
+func (d *dictionary) Words() (result []Word) {
+	for _, w := range d.words {
+		result = append(result, w)
+	}
+	return result
+}
+
+func (d *dictionary) addWord(line string, builder *wordLinkageBuilder) {
+	if parts := strings.Split(line, "\t"); len(parts) == 2 {
+		actualWord, n := parts[0], parts[1]
+		maxSteps, _ := strconv.Atoi(n)
+		if maxSteps > d.maxSteps {
+			d.maxSteps = maxSteps
+		}
+		if len(actualWord) == d.wordLength {
+			w := newWord(actualWord, maxSteps)
+			d.words[w.ActualWord()] = w
+			for i := 3; i <= maxSteps; i++ {
+				d.wordsBySteps[i] = append(d.wordsBySteps[i], w)
+			}
+			builder.link(w)
+		}
+	} else {
+		panic(fmt.Sprintf("invalid word input: %q", line))
 	}
 }
 

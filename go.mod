@@ -1,6 +1,6 @@
 module gowordladder
 
-go 1.18
+go 1.26
 
 require (
 	github.com/gammazero/deque v0.1.0
