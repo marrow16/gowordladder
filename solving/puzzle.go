@@ -38,5 +38,5 @@ func (p *Puzzle) CalculateMinimumLadderLength() (min int, ok bool) {
 		start = p.endWord
 		end = p.startWord
 	}
-	return NewWordDistanceMap(start, nil).Distance(end)
+	return words.NewWordDistanceMap(start, nil).Distance(end)
 }

@@ -1,127 +1,127 @@
-AA
-AB
-AD
-AE
-AG
-AH
-AI
-AL
-AM
-AN
-AR
-AS
-AT
-AW
-AX
-AY
-BA
-BE
-BI
-BO
-BY
-CH
-DA
-DE
-DI
-DO
-EA
-ED
-EE
-EF
-EH
-EL
-EM
-EN
-ER
-ES
-ET
-EW
-EX
-FA
-FE
-FY
-GI
-GO
-GU
-HA
-HE
-HI
-HM
-HO
-ID
-IF
-IN
-IO
-IS
-IT
-JA
-JO
-KA
-KI
-KO
-KY
-LA
-LI
-LO
-MA
-ME
-MI
-MM
-MO
-MU
-MY
-NA
-NE
-NO
-NU
-NY
-OB
-OD
-OE
-OF
-OH
-OI
-OK
-OM
-ON
-OO
-OP
-OR
-OS
-OU
-OW
-OX
-OY
-PA
-PE
-PI
-PO
-QI
-RE
-SH
-SI
-SO
-ST
-TA
-TE
-TI
-TO
-UG
-UH
-UM
-UN
-UP
-UR
-US
-UT
-WE
-WO
-XI
-XU
-YA
-YE
-YO
-YU
-ZA
-ZE
-ZO
+AA	4
+AB	4
+AD	4
+AE	4
+AG	4
+AH	4
+AI	4
+AL	4
+AM	4
+AN	4
+AR	4
+AS	4
+AT	4
+AW	4
+AX	4
+AY	4
+BA	5
+BE	4
+BI	4
+BO	5
+BY	4
+CH	4
+DA	5
+DE	4
+DI	4
+DO	5
+EA	4
+ED	4
+EE	4
+EF	4
+EH	4
+EL	5
+EM	4
+EN	4
+ER	4
+ES	4
+ET	5
+EW	4
+EX	4
+FA	5
+FE	4
+FY	4
+GI	4
+GO	5
+GU	5
+HA	4
+HE	4
+HI	4
+HM	4
+HO	4
+ID	4
+IF	4
+IN	4
+IO	4
+IS	4
+IT	5
+JA	5
+JO	5
+KA	5
+KI	4
+KO	5
+KY	4
+LA	5
+LI	4
+LO	5
+MA	4
+ME	4
+MI	4
+MM	4
+MO	4
+MU	4
+MY	4
+NA	5
+NE	4
+NO	5
+NU	5
+NY	4
+OB	4
+OD	4
+OE	4
+OF	4
+OH	4
+OI	4
+OK	4
+OM	4
+ON	4
+OO	4
+OP	4
+OR	4
+OS	4
+OU	4
+OW	4
+OX	4
+OY	4
+PA	5
+PE	4
+PI	4
+PO	5
+QI	4
+RE	4
+SH	4
+SI	4
+SO	4
+ST	4
+TA	5
+TE	4
+TI	4
+TO	5
+UG	5
+UH	4
+UM	4
+UN	4
+UP	5
+UR	4
+US	4
+UT	5
+WE	4
+WO	5
+XI	4
+XU	5
+YA	5
+YE	4
+YO	5
+YU	5
+ZA	5
+ZE	4
+ZO	5

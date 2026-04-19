@@ -13,7 +13,7 @@ type Solver struct {
 	endWord             words.Word
 	reversed            bool
 	maximumLadderLength int
-	endDistances        WordDistanceMap
+	endDistances        words.WordDistanceMap
 	sync                *sync.Mutex
 	waitGroup           *sync.WaitGroup
 }
@@ -70,7 +70,7 @@ func (s *Solver) Solve(maximumLadderLength int) []Solution {
 		s.endWord = s.puzzle.startWord
 	}
 	limit := maximumLadderLength - 1
-	s.endDistances = NewWordDistanceMap(s.endWord, &limit)
+	s.endDistances = words.NewWordDistanceMap(s.endWord, &limit)
 
 	s.waitGroup = &sync.WaitGroup{}
 	for _, linkedWord := range s.startWord.LinkedWords() {
