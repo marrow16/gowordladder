@@ -1,29 +1,26 @@
 package words
 
-import (
-	"github.com/gammazero/deque"
-)
-
 type WordDistanceMap map[string]int
 
-func NewWordDistanceMap(word Word, maximumLadderLength *int) WordDistanceMap {
+func NewWordDistanceMap(word *Word, maximumLadderLength *int) WordDistanceMap {
 	result := make(WordDistanceMap)
 	result[word.ActualWord()] = 1
-
-	var maxDistance = 100
+	maxDistance := word.MaxSteps()
 	if maximumLadderLength != nil {
 		maxDistance = *maximumLadderLength
 	}
-	var q deque.Deque
-	q.PushBack(word)
-	for q.Len() != 0 {
-		nextWord := q.PopFront().(Word)
-		distance := result.distanceGetOrDefault(nextWord) + 1
+	q := make([]*Word, 0, 1024)
+	head := 0
+	q = append(q, word)
+	for head < len(q) {
+		nextWord := q[head]
+		head++
+		distance := result[nextWord.ActualWord()] + 1
 		if distance <= maxDistance {
 			for _, linkedWord := range nextWord.LinkedWords() {
-				if !result.Contains(linkedWord) {
-					q.PushBack(linkedWord)
-					result.computeIfAbsent(linkedWord, distance)
+				if _, ok := result[linkedWord.ActualWord()]; !ok {
+					q = append(q, linkedWord)
+					result[linkedWord.ActualWord()] = distance
 				}
 			}
 		}
@@ -31,31 +28,12 @@ func NewWordDistanceMap(word Word, maximumLadderLength *int) WordDistanceMap {
 	return result
 }
 
-func (m WordDistanceMap) distanceGetOrDefault(word Word) int {
-	result := 0
-	if d, ok := m[word.ActualWord()]; ok {
-		result = d
-	}
-	return result
-}
-
-func (m WordDistanceMap) computeIfAbsent(word Word, distance int) {
-	if _, ok := m[word.ActualWord()]; !ok {
-		m[word.ActualWord()] = distance
-	}
-}
-
-func (m WordDistanceMap) Contains(word Word) bool {
-	_, ok := m[word.ActualWord()]
-	return ok
-}
-
-func (m WordDistanceMap) Distance(word Word) (dist int, ok bool) {
+func (m WordDistanceMap) Distance(word *Word) (dist int, ok bool) {
 	dist, ok = m[word.ActualWord()]
 	return
 }
 
-func (m WordDistanceMap) Reachable(word Word, maximumLadderLength int) bool {
+func (m WordDistanceMap) Reachable(word *Word, maximumLadderLength int) bool {
 	if distance, ok := m[word.ActualWord()]; ok {
 		return distance <= maximumLadderLength
 	}

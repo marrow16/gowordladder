@@ -22,8 +22,8 @@ func TestGeneratePuzzle_cat2dog(t *testing.T) {
 	assert.Equal(t, 3, p.WordLength)
 	assert.Equal(t, 5, p.LadderLength)
 	assert.Equal(t, 221, len(p.Solutions))
-	assert.Equal(t, 1603.0, p.MaxScore)
-	assert.Equal(t, 535.0, p.RungScore)
+	assert.Equal(t, 1153.0, p.MaxScore)
+	assert.Equal(t, 385.0, p.RungScore)
 
 	p, err = GeneratePuzzle(3, 4, &start, &end)
 	require.NoError(t, err)
@@ -31,8 +31,8 @@ func TestGeneratePuzzle_cat2dog(t *testing.T) {
 	assert.Equal(t, 3, p.WordLength)
 	assert.Equal(t, 4, p.LadderLength)
 	assert.Equal(t, 4, len(p.Solutions))
-	assert.Equal(t, 2550.0, p.MaxScore)
-	assert.Equal(t, 1275.0, p.RungScore)
+	assert.Equal(t, 2100.0, p.MaxScore)
+	assert.Equal(t, 1050.0, p.RungScore)
 }
 
 func TestGeneratePuzzle_filpEnd(t *testing.T) {
@@ -54,8 +54,8 @@ func TestGeneratePuzzle_code2java(t *testing.T) {
 	assert.Equal(t, 4, p.WordLength)
 	assert.Equal(t, 5, p.LadderLength)
 	assert.Equal(t, 2, len(p.Solutions))
-	assert.Equal(t, 3650.0, p.MaxScore)
-	assert.Equal(t, 1217.0, p.RungScore)
+	assert.Equal(t, 3050.0, p.MaxScore)
+	assert.Equal(t, 1017.0, p.RungScore)
 }
 
 func TestGeneratePuzzle_randomStartWord(t *testing.T) {

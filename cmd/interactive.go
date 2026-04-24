@@ -36,17 +36,17 @@ var steps = []struct {
 	{2, ""},
 }
 
-type Interactive struct {
+type interactive struct {
 	onStep              int
-	dictionary          words.Dictionary
-	dictionaryLoadTime  int64
-	startWord           words.Word
-	endWord             words.Word
+	dictionary          *words.Dictionary
+	dictionaryLoadTime  time.Duration
+	startWord           *words.Word
+	endWord             *words.Word
 	maximumLadderLength int
 }
 
-func NewInteractive(args []string) *Interactive {
-	result := &Interactive{onStep: 0}
+func newInteractive(args []string) *interactive {
+	result := &interactive{onStep: 0}
 	if len(args) >= 1 {
 		println(steps[0].prompt + green(args[0]))
 		if result.setStartWord(args[0]) {
@@ -62,7 +62,7 @@ func NewInteractive(args []string) *Interactive {
 	return result
 }
 
-func (i *Interactive) Run() {
+func (i *interactive) Run() {
 	again := true
 	for again {
 		for i.onStep < len(steps) {
@@ -77,13 +77,13 @@ func (i *Interactive) Run() {
 		print(prompt + "Run again [y/n]: ")
 		again = false
 		if input, err := reader.ReadString('\n'); err == nil {
-			again = input[:len(input)-1] == "y"
+			again = input == "\n" || input[:len(input)-1] == "y"
 			println("")
 		}
 	}
 }
 
-func (i *Interactive) processStepInput() {
+func (i *interactive) processStepInput() {
 	reader := bufio.NewReader(os.Stdin)
 	if i.onStep == 2 {
 		txt := prompt + "Maximum ladder length? [" + fmt.Sprintf("%d-%d", minimumLadderLength, i.dictionary.MaxSteps()) + ", or return]: "
@@ -115,22 +115,23 @@ func (i *Interactive) processStepInput() {
 	}
 }
 
-func (i *Interactive) loadDictionary(wordLength int) {
-	startTime := time.Now().UnixNano()
-	i.dictionary = words.LoadDictionary(wordLength)
-	i.dictionaryLoadTime = time.Now().UnixNano() - startTime
+func (i *interactive) loadDictionary(wordLength int) {
+	start := time.Now()
+	i.dictionary = words.NewDictionary(wordLength)
+	i.dictionaryLoadTime = time.Now().Sub(start)
 }
 
 var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
 
-func (i *Interactive) setStartWord(input string) bool {
+func (i *interactive) setStartWord(input string) bool {
 	if len(input) < minimumWordLength || len(input) > maximumWordLength {
 		println(red(fmt.Sprintf("            Please enter a word with between %d and %d characters!", minimumWordLength, maximumWordLength)))
 		return false
 	}
 	i.loadDictionary(len(input))
 	if input == strings.Repeat("?", len(input)) {
-		candidates := i.dictionary.WordsWithSteps(5)
+		ladderLen := rng.Intn(i.dictionary.MaxSteps()-2) + 3
+		candidates := i.dictionary.WordsWithSteps(ladderLen)
 		i.startWord = candidates[rng.Intn(len(candidates))]
 		println(green(fmt.Sprintf("                      Random: %s", i.startWord.ActualWord())))
 		return true
@@ -147,7 +148,7 @@ func (i *Interactive) setStartWord(input string) bool {
 	return true
 }
 
-func (i *Interactive) setEndWord(input string) bool {
+func (i *interactive) setEndWord(input string) bool {
 	if len(input) == 0 {
 		wm := words.NewWordDistanceMap(i.startWord, nil)
 		candidates := wm.Words()
@@ -177,7 +178,7 @@ func (i *Interactive) setEndWord(input string) bool {
 	return true
 }
 
-func (i *Interactive) setMaximumLadderLength(input string) bool {
+func (i *interactive) setMaximumLadderLength(input string) bool {
 	if len(input) == 0 {
 		println(green("            No answer - assuming auto calc of minimum ladder length"))
 		i.maximumLadderLength = -1
@@ -195,36 +196,36 @@ func (i *Interactive) setMaximumLadderLength(input string) bool {
 	return true
 }
 
-func (i *Interactive) solve() {
-	println("Took " + green(fmt.Sprintf("%dms", i.dictionaryLoadTime/1000000)) + " to load dictionary")
+func (i *interactive) solve() {
+	println("Took " + green(fmt.Sprintf("%s", i.dictionaryLoadTime)) + " to load dictionary")
 	puzzle := solving.NewPuzzle(i.startWord, i.endWord)
 	if i.maximumLadderLength == -1 {
-		startTime := time.Now().UnixNano()
-		min, solvable := puzzle.CalculateMinimumLadderLength()
-		took := time.Now().UnixNano() - startTime
+		start := time.Now()
+		minLen, solvable := puzzle.CalculateMinimumLadderLength()
+		dur := time.Now().Sub(start)
 		if !solvable {
 			println(red("Cannot solve `" + i.startWord.ActualWord() + "' to '" + i.endWord.ActualWord() + "'!"))
 		}
-		i.maximumLadderLength = min
-		println("Took " + green(fmt.Sprintf("%dms", took/1000000)) +
-			" to determine minimum ladder length of " + green(fmt.Sprintf("%d", min)))
+		i.maximumLadderLength = minLen
+		println("Took " + green(fmt.Sprintf("%s", dur)) +
+			" to determine minimum ladder length of " + green(fmt.Sprintf("%d", minLen)))
 	}
 	solver := solving.NewSolver(puzzle)
-	startTime := time.Now().UnixNano()
+	start := time.Now()
 	solutions := solver.Solve(i.maximumLadderLength)
-	took := time.Now().UnixNano() - startTime
+	dur := time.Now().Sub(start)
 	if len(solutions) == 0 {
-		println(red(fmt.Sprintf("Took %dms to find no solutions (explored %d candidates)", took/1000000, solver.ExploredCount())))
+		println(red(fmt.Sprintf("Took %s to find no solutions (explored %d candidates)", dur, solver.ExploredCount())))
 	} else {
 		println(
-			"Took " + green(fmt.Sprintf("%dms", took/1000000)) +
+			"Took " + green(fmt.Sprintf("%s", dur)) +
 				" to find " + green(fmt.Sprintf("%d", len(solutions))) +
 				" solutions (explored " + green(fmt.Sprintf("%d", solver.ExploredCount())) + " candidates)")
 		i.displaySolutions(solutions)
 	}
 }
 
-func (i *Interactive) displaySolutions(solutions []solving.Solution) {
+func (i *interactive) displaySolutions(solutions []*solving.Solution) {
 	SortSolutions(solutions)
 	pageStart := 0
 	length := len(solutions)

@@ -49,9 +49,17 @@ func TestWord_LinkedWords(t *testing.T) {
 }
 
 func TestWord_IsIsland(t *testing.T) {
-	w := newWord("xxx", 0)
-	assert.True(t, w.IsIsland())
+	d := NewDictionary(3)
+	w, ok := d.Word("iwi")
+	assert.True(t, ok)
 
-	w.addLink(newWord("yyy", 0))
-	assert.False(t, w.IsIsland())
+	assert.True(t, w.IsIsland())
+}
+
+func TestWord_IsDoublet(t *testing.T) {
+	d := NewDictionary(4)
+	w, ok := d.Word("upsy")
+	assert.True(t, ok)
+
+	assert.True(t, w.IsDoublet())
 }

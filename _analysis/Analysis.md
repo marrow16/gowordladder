@@ -1,6 +1,7 @@
 # Analysis Report
 
-### Word statistics table
+
+### Word Statistics
 
 * Islands - are words that changing any letter will not form another word
 * Doublets - are words that changing any letter will only form one other word
@@ -34,9 +35,10 @@ Observation notes:
 
 ![Chart](analysis.png)
 
-### Adjacent Counts Table
+### Adjacent Words Counts
 
-This table shows the spread of adjacent word counts for each word in the dictionary
+This table shows the spread of adjacent word counts for each word in the dictionary.
+* Words are considered adjacent if changing just one letter in one word forms the other word.
 
 | Letters |     0 |     1 |     2 |     3 |     4 |     5 |     6 |     7 |     8 |     9 |    10 |    11 |    12 |    13 |    14 |    15 |    16 |    17 |    18 |    19 |    20 |    21 |    22 |    23 |    24 |    25 |    26 |    27 |    28 |    29 |    30 |    31 |    32 |    33 |    34 |    35 |    36 |    37 |    38 |    39 |    40 |    41 |    42 |
 |--------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|
@@ -61,8 +63,8 @@ This table shows the spread of adjacent word counts for each word in the diction
 
 8-letter words yields the longest ladders (80)
 
-|          |          |          |
-|----------|----------|----------|
+|            |            |            |
+|------------|------------|------------|
 | `TOWNLING` | `TWIDDLED` | `TWIDDLER` |
 | `TOWELING` | `TWIDDLES` | `TWIDDLES` |
 | `TOWERING` | `TWADDLES` | `TWADDLES` |
@@ -103,8 +105,8 @@ This table shows the spread of adjacent word counts for each word in the diction
 | `TROUTING` | `CRIMPING` | `CRIMPING` |
 | `TROUPING` | `CRUMPING` | `CRUMPING` |
 | `TROMPING` | `TRUMPING` | `TRUMPING` |
-| `TRAMPING` | `TROMPING` | `TROMPING` |
-| `CRAMPING` | `TROUPING` | `TROUPING` |
+| `TRUMPING` | `TROMPING` | `TROMPING` |
+| `CRUMPING` | `TROUPING` | `TROUPING` |
 | `CRIMPING` | `TROUTING` | `TROUTING` |
 | `CRISPING` | `TROTTING` | `TROTTING` |
 | `CRISPINS` | `TROTHING` | `TROTHING` |
@@ -123,10 +125,10 @@ This table shows the spread of adjacent word counts for each word in the diction
 | `SCANTIES` | `RUCKLING` | `RUCKLING` |
 | `SCANTIER` | `RECKLING` | `RECKLING` |
 | `SLANTIER` | `RECULING` | `RECULING` |
-| `SLANGIER` | `RECURING` | `RECURING` |
-| `SLINGIER` | `REPURING` | `REPURING` |
-| `STINGIER` | `REPUTING` | `REPUTING` |
-| `STINTIER` | `DEPUTING` | `DEPUTING` |
+| `SLANGIER` | `RECURING` | `RECUSING` |
+| `SLINGIER` | `REPURING` | `REFUSING` |
+| `STINGIER` | `REPUTING` | `DEFUSING` |
+| `STINTIER` | `DEPUTING` | `DEBUSING` |
 | `STILTIER` | `DEBUTING` | `DEBUTING` |
 | `STILLIER` | `DEBITING` | `DEBITING` |
 | `SKILLIER` | `REBITING` | `REBITING` |
@@ -142,5 +144,5 @@ This table shows the spread of adjacent word counts for each word in the diction
 | `SWADDLES` | `DOWERING` | `DOWERING` |
 | `TWADDLES` | `TOWERING` | `TOWERING` |
 | `TWIDDLES` | `TOWELING` | `TOWELING` |
-| `TWIDDLER` | `TOWNLING` | `TOWNLING` |
+| `TWIDDLED` | `TOWNLING` | `TOWNLING` |
 | 143 alternatives | 143 alternatives | 143 alternatives |

@@ -6,12 +6,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
-	"gonum.org/v1/plot/plotutil"
 	"gonum.org/v1/plot/text"
 	"gonum.org/v1/plot/vg"
 	"gowordladder/generator"
 	"gowordladder/solving"
 	"gowordladder/words"
+	"image/color"
+	"io"
 	"math"
 	"os"
 	"strconv"
@@ -30,7 +31,7 @@ func TestAnalysisReport(t *testing.T) {
 	require.NoError(t, err)
 	defer fCsv2.Close()
 
-	fmt.Fprint(f, "# Analysis Report\n\n")
+	printMdHeader(f, 1, "Analysis Report")
 
 	// collect statistics...
 	stats := make([]map[int]int, 0)
@@ -40,10 +41,12 @@ func TestAnalysisReport(t *testing.T) {
 	longests := [15]int{}
 	bigMax := 0
 	bigMaxWordLen := 0
+	totalWords := 0
 	for wl := 2; wl <= 15; wl++ {
-		d := words.LoadDictionary(wl)
+		d := words.NewDictionary(wl)
 		wds := d.Words()
 		counts[wl-1] = len(wds)
+		totalWords += len(wds)
 		m := make(map[int]int)
 		for _, w := range wds {
 			if w.IsIsland() {
@@ -68,70 +71,60 @@ func TestAnalysisReport(t *testing.T) {
 		stats = append(stats, m)
 	}
 
-	fmt.Fprint(f, "### Word statistics table\n\n")
-	fmt.Fprint(f, "* Islands - are words that changing any letter will not form another word\n")
-	fmt.Fprint(f, "* Doublets - are words that changing any letter will only form one other word\n")
-	fmt.Fprint(f, "* LDS% (local decay smoothness) – the longest consecutive run of ladder lengths for which each word count is at least 95% of the previous ladder length’s count, expressed as a percentage of all ladder lengths in the dictionary\n")
-	fmt.Fprint(f, "* Var – variance of consecutive count ratios, measuring how smoothly (low) or unevenly (high) word counts decay across ladder lengths\n")
-	fmt.Fprint(f, "* Drop% – percentage decrease from ladder length 2 to 3, representing initial connectivity decay\n")
-	fmt.Fprint(f, "* Longest - is the longest possible ladder length for the dictionary\n")
-	fmt.Fprint(f, "* Numeric columns - are the number of words that can form that ladder length\n\n")
-	fmt.Fprint(fCsv1, "Letters,Words,Islands,Doublets,Longest")
-	for i := 2; i <= bigMax; i++ {
-		fmt.Fprintf(fCsv1, ",%d", i)
-	}
-	fmt.Fprint(fCsv1, "\n")
-	fmt.Fprint(f, "| Letters | Words | Islands |   %  | Doublets |   %  | LDS% |  Var | Drop% | Longest |")
-	for i := 2; i <= bigMax; i++ {
-		fmt.Fprintf(f, "%6d |", i)
-	}
-	fmt.Fprint(f, "\n")
-	fmt.Fprint(f, "|--------:|------:|--------:|-----:|---------:|-----:|-----:|-----:|------:|--------:|")
-	for i := 2; i <= bigMax; i++ {
-		fmt.Fprint(f, strings.Repeat("-", 6)+":|")
-	}
-	fmt.Fprint(f, "\n")
+	printMdHeader(f, 3, "Word Statistics")
+	printMdNotes(f, "", false,
+		"Islands - are words that changing any letter will not form another word",
+		"Doublets - are words that changing any letter will only form one other word",
+		"LDS% (local decay smoothness) – the longest consecutive run of ladder lengths for which each word count is at least 95% of the previous ladder length’s count, expressed as a percentage of all ladder lengths in the dictionary",
+		"Var – variance of consecutive count ratios, measuring how smoothly (low) or unevenly (high) word counts decay across ladder lengths",
+		"Drop% – percentage decrease from ladder length 2 to 3, representing initial connectivity decay",
+		"Longest - is the longest possible ladder length for the dictionary",
+		"Numeric columns - are the number of words that can form that ladder length",
+	)
+	printMdTableHeaders(f, []string{"Letters", "Words", "Islands", "  % ", "Doublets", "  % ", "LDS%", " Var", "Drop%", "Longest"}, 2, bigMax, 6)
+	printCsvHeaders(fCsv1, []string{"Letters", "Words", "Islands", "Doublets", "Longest"}, 2, bigMax)
+	totalPerms := 0
 	for wl := 2; wl <= 15; wl++ {
 		m := stats[wl-2]
 		assert.Equal(t, counts[wl-1]-islands[wl-1], m[2])
 		assert.Equal(t, counts[wl-1]-islands[wl-1]-doublets[wl-1], m[3])
 		plateau := plateauSize(m, bigMax, 0.95)
 		ll := longests[wl-1] - 1
-		pp := (float64(plateau) / float64(ll)) * 100
+		lds := (float64(plateau) / float64(ll)) * 100
 		fc, fi, fd := float64(counts[wl-1]), float64(islands[wl-1]), float64(doublets[wl-1])
 		v := ratioVariance(m, bigMax)
 		drop := 100.0 - ((float64(m[3]) / float64(m[2])) * 100)
-		fmt.Fprintf(f, "| %7d | %5d | %7d | %4.1f | %8d | %4.1f | %4.1f | %.2f | %5.1f | %7d |", wl, counts[wl-1], islands[wl-1], (fi/fc)*100, doublets[wl-1], (fd/fc)*100, pp, v, drop, longests[wl-1])
+		_, _ = fmt.Fprintf(f, "| %7d | %5d | %7d | %4.1f | %8d | %4.1f | %4.1f | %.2f | %5.1f | %7d |", wl, counts[wl-1], islands[wl-1], (fi/fc)*100, doublets[wl-1], (fd/fc)*100, lds, v, drop, longests[wl-1])
+		_, _ = fmt.Fprintf(fCsv1, "%d,%d,%d,%d,%d", wl, counts[wl-1], islands[wl-1], doublets[wl-1], longests[wl-1])
 		for i := 2; i <= bigMax; i++ {
 			if n := m[i]; n == 0 {
-				fmt.Fprint(f, strings.Repeat(" ", 7)+"|")
+				_, _ = fmt.Fprint(f, strings.Repeat(" ", 7)+"|")
+				_, _ = fmt.Fprint(fCsv1, ",")
 			} else {
-				fmt.Fprintf(f, "%6d |", n)
+				_, _ = fmt.Fprintf(f, "%6d |", n)
+				_, _ = fmt.Fprintf(fCsv1, ",%d", n)
+				if i > 2 {
+					totalPerms += n
+				}
 			}
 		}
-		fmt.Fprintf(f, "\n")
-		fmt.Fprintf(fCsv1, "%d,%d,%d,%d,%d", wl, counts[wl-1], islands[wl-1], doublets[wl-1], longests[wl-1])
-		for i := 2; i <= bigMax; i++ {
-			if n := m[i]; n == 0 {
-				fmt.Fprint(fCsv1, ",")
-			} else {
-				fmt.Fprintf(fCsv1, ",%d", n)
-			}
-		}
-		fmt.Fprint(fCsv1, "\n")
+		_, _ = fmt.Fprintf(f, "\n")
+		_, _ = fmt.Fprint(fCsv1, "\n")
 	}
-	fmt.Fprint(f, "\nObservation notes:\n")
-	fmt.Fprint(f, "1. word - islands = ladder length 2 words\n")
-	fmt.Fprint(f, "2. word - islands - doublets = ladder length 3 words\n\n")
+	fmt.Printf("Words: %d, Perms: %d\n", totalWords, totalPerms)
+	printMdNotes(f, "\nObservation notes:", true,
+		"word - islands = ladder length 2 words",
+		"word - islands - doublets = ladder length 3 words",
+	)
 	// chart...
-	fmt.Fprint(f, "\n![Chart]("+analysisChartFilename+")")
+	printMdChartLink(f, analysisChartFilename)
 	analysisChart(stats, bigMax)
 
 	// adjacents table...
 	adjMax := 0
 	adjacents := make([]map[int]int, 0)
 	for wl := 2; wl <= 15; wl++ {
-		d := words.LoadDictionary(wl)
+		d := words.NewDictionary(wl)
 		m := map[int]int{}
 		for _, w := range d.Words() {
 			n := len(w.LinkedWords())
@@ -143,62 +136,50 @@ func TestAnalysisReport(t *testing.T) {
 		adjacents = append(adjacents, m)
 		assert.Equal(t, islands[wl-1], m[0])
 	}
-	fmt.Fprint(f, "\n\n### Adjacent Counts Table\n\n")
-	fmt.Fprint(f, "This table shows the spread of adjacent word counts for each word in the dictionary\n\n")
-	fmt.Fprint(f, "| Letters |")
-	for i := 0; i <= adjMax; i++ {
-		fmt.Fprintf(f, "%6d |", i)
-	}
-	fmt.Fprint(f, "\n")
-	fmt.Fprint(f, "|--------:|")
-	for i := 0; i <= adjMax; i++ {
-		fmt.Fprint(f, strings.Repeat("-", 6)+":|")
-	}
-	fmt.Fprint(f, "\n")
-	fmt.Fprint(fCsv2, "Letters")
-	for i := 0; i <= adjMax; i++ {
-		fmt.Fprintf(fCsv2, ",%d", i)
-	}
-	fmt.Fprint(fCsv2, "\n")
+	printMdHeader(f, 3, "Adjacent Words Counts")
+	printMdNotes(f, "This table shows the spread of adjacent word counts for each word in the dictionary.", false, "Words are considered adjacent if changing just one letter in one word forms the other word.")
+
+	printMdTableHeaders(f, []string{"Letters"}, 0, adjMax, 6)
+	printCsvHeaders(fCsv2, []string{"Letters"}, 0, adjMax)
 	for wl := 2; wl <= 15; wl++ {
 		m := adjacents[wl-2]
-		fmt.Fprintf(f, "| %7d |", wl)
+		_, _ = fmt.Fprintf(f, "| %7d |", wl)
 		for i := 0; i <= adjMax; i++ {
 			if n := m[i]; n == 0 {
-				fmt.Fprint(f, strings.Repeat(" ", 7)+"|")
+				_, _ = fmt.Fprint(f, strings.Repeat(" ", 7)+"|")
 			} else {
-				fmt.Fprintf(f, "%6d |", n)
+				_, _ = fmt.Fprintf(f, "%6d |", n)
 			}
 		}
-		fmt.Fprint(f, "\n")
-		fmt.Fprintf(fCsv2, "%d", wl)
+		_, _ = fmt.Fprint(f, "\n")
+		_, _ = fmt.Fprintf(fCsv2, "%d", wl)
 		for i := 0; i <= adjMax; i++ {
 			if n := m[i]; n == 0 {
-				fmt.Fprint(fCsv2, ",")
+				_, _ = fmt.Fprint(fCsv2, ",")
 			} else {
-				fmt.Fprintf(fCsv2, ",%d", n)
+				_, _ = fmt.Fprintf(fCsv2, ",%d", n)
 			}
 		}
-		fmt.Fprint(fCsv2, "\n")
+		_, _ = fmt.Fprint(fCsv2, "\n")
 	}
 	// chart...
-	fmt.Fprint(f, "\n![Chart]("+adjacentsChartFilename+")")
+	printMdChartLink(f, adjacentsChartFilename)
 	adjacentsChart(adjacents, adjMax, counts)
 
 	// longest ladders...
-	fmt.Fprint(f, "\n\n### Longest Ladders\n\n")
-	fmt.Fprintf(f, "%d-letter words yields the longest ladders (%d)\n\n", bigMaxWordLen, bigMax)
-	d := words.LoadDictionary(bigMaxWordLen)
+	printMdHeader(f, 3, "Longest Ladders")
+	printMdNotes(f, fmt.Sprintf("%d-letter words yields the longest ladders (%d)\n", bigMaxWordLen, bigMax), false)
+	d := words.NewDictionary(bigMaxWordLen)
 	wds := d.WordsWithSteps(bigMax)
-	fmt.Fprint(f, "|")
-	for _ = range len(wds) {
-		fmt.Fprint(f, strings.Repeat(" ", bigMaxWordLen+2)+"|")
+	_, _ = fmt.Fprint(f, "|")
+	for range len(wds) {
+		_, _ = fmt.Fprint(f, strings.Repeat(" ", bigMaxWordLen+4)+"|")
 	}
-	fmt.Fprint(f, "\n|")
-	for _ = range len(wds) {
-		fmt.Fprint(f, strings.Repeat("-", bigMaxWordLen+2)+"|")
+	_, _ = fmt.Fprint(f, "\n|")
+	for range len(wds) {
+		_, _ = fmt.Fprint(f, strings.Repeat("-", bigMaxWordLen+4)+"|")
 	}
-	solutions := make([]solving.Solution, 0)
+	solutions := make([]*solving.Solution, 0)
 	alts := make([]int, 0)
 	for _, wd := range wds {
 		sw := wd.ActualWord()
@@ -208,15 +189,76 @@ func TestAnalysisReport(t *testing.T) {
 		alts = append(alts, len(puzzle.Solutions)-1)
 	}
 	for l := 0; l < bigMax; l++ {
-		fmt.Fprint(f, "\n|")
+		_, _ = fmt.Fprint(f, "\n|")
 		for _, s := range solutions {
-			fmt.Fprintf(f, " `%s` |", s.Ladder()[l].ActualWord())
+			_, _ = fmt.Fprintf(f, " `%s` |", s.Ladder()[l].ActualWord())
 		}
 	}
-	fmt.Fprint(f, "\n|")
+	_, _ = fmt.Fprint(f, "\n|")
 	for _, alt := range alts {
-		fmt.Fprintf(f, " %d alternatives |", alt)
+		_, _ = fmt.Fprintf(f, " %d alternatives |", alt)
 	}
+}
+
+func printMdHeader(f *os.File, level int, header string) {
+	if level > 1 {
+		_, _ = fmt.Fprint(f, "\n")
+	}
+	_, _ = fmt.Fprint(f, strings.Repeat("#", level))
+	_, _ = fmt.Fprint(f, " "+header+"\n\n")
+}
+
+func printMdNotes(f io.Writer, title string, numbered bool, notes ...string) {
+	if title != "" {
+		_, _ = fmt.Fprint(f, title+"\n")
+	}
+	for i, n := range notes {
+		if numbered {
+			_, _ = fmt.Fprintf(f, "%d. ", i+1)
+		} else {
+			_, _ = fmt.Fprint(f, "* ")
+		}
+		_, _ = fmt.Fprint(f, n+"\n")
+	}
+	if len(notes) > 0 {
+		_, _ = fmt.Fprint(f, "\n")
+	}
+}
+
+func printMdTableHeaders(f io.Writer, hdrs []string, numMin, numMax, numLen int) {
+	_, _ = fmt.Fprint(f, "|")
+	for _, h := range hdrs {
+		_, _ = fmt.Fprint(f, " "+h+" |")
+	}
+	numFmt := "%" + strconv.Itoa(numLen) + "d |"
+	for i := numMin; i <= numMax; i++ {
+		_, _ = fmt.Fprintf(f, numFmt, i)
+	}
+	_, _ = fmt.Fprint(f, "\n|")
+	for _, h := range hdrs {
+		_, _ = fmt.Fprint(f, strings.Repeat("-", len(h)+1)+":|")
+	}
+	for i := numMin; i <= numMax; i++ {
+		_, _ = fmt.Fprint(f, strings.Repeat("-", numLen)+":|")
+	}
+	_, _ = fmt.Fprint(f, "\n")
+}
+
+func printMdChartLink(f io.Writer, link string) {
+	_, _ = fmt.Fprint(f, "\n![Chart]("+link+")\n")
+}
+
+func printCsvHeaders(f io.Writer, hdrs []string, numMin, numMax int) {
+	for i, h := range hdrs {
+		if i > 0 {
+			_, _ = fmt.Fprint(f, ",")
+		}
+		_, _ = fmt.Fprint(f, h)
+	}
+	for i := numMin; i <= numMax; i++ {
+		_, _ = fmt.Fprintf(f, ",%d", i)
+	}
+	_, _ = fmt.Fprint(f, "\n")
 }
 
 func plateauSize(stats map[int]int, bigMax int, threshold float64) int {
@@ -292,27 +334,7 @@ const (
 )
 
 func analysisChart(stats []map[int]int, bigMax int) {
-	const (
-		fontVariant = "Sans"
-		title       = "Word Statistics"
-		xAxisLabel  = "Ladder Lengths"
-		yAxisLabel  = "Words"
-	)
-	p := plot.New()
-	p.Legend.TextStyle.Font.Variant = fontVariant
-	p.Title.Text = title
-	p.Title.TextStyle.Font.Variant = fontVariant
-	p.Title.TextStyle.Font.Weight = 3 //font2.WeightBold
-	p.X.Label.Text = xAxisLabel
-	p.X.Label.TextStyle.Font.Variant = fontVariant
-	p.Y.Label.Text = yAxisLabel
-	p.Y.Label.TextStyle.Font.Variant = fontVariant
-
-	p.X.Tick.Label.Rotation = math.Pi / 2 //1.0472 // 60 degrees
-	p.X.Tick.Label.XAlign = text.XRight
-	p.X.Tick.Label.YAlign = text.YCenter
-	p.X.Tick.Label.Font.Variant = fontVariant
-	p.X.Padding = 5
+	p := newPlot("Word Statistics", "Ladder Lengths", "Words")
 
 	// make the legends appear above the plot area (by padding the title and shifting legends up)...
 	legendsHt := vg.Length(14) * p.Legend.TextStyle.Height("X")
@@ -337,7 +359,6 @@ func analysisChart(stats []map[int]int, bigMax int) {
 	p.X.Tick.Marker = plot.ConstantTicks(ticks)
 
 	// plots...
-	plots := make([]any, 0)
 	for wl := 2; wl <= 15; wl++ {
 		m := stats[wl-2]
 		pts := make(plotter.XYs, 0)
@@ -346,40 +367,25 @@ func analysisChart(stats []map[int]int, bigMax int) {
 				pts = append(pts, plotter.XY{X: float64(i), Y: float64(n)})
 			}
 		}
-		plots = append(plots, fmt.Sprintf("%d-letter words", wl), pts)
+		if l, s, err := plotter.NewLinePoints(pts); err == nil {
+			c, d := colorAndDashes(wl)
+			l.Color = c
+			l.Dashes = d
+			s.Color = c
+			s.Shape = nil
+			p.Add(l, s)
+			p.Legend.Add(fmt.Sprintf("%d-letter words", wl), l, s)
+		} else {
+			panic(err)
+		}
 	}
-	err := plotutil.AddLinePoints(p, plots...)
-	if err != nil {
-		panic(err)
-	}
-
 	if err := p.Save(800, 500+legendsHt, analysisChartFilename); err != nil {
 		panic(err)
 	}
 }
 
 func adjacentsChart(stats []map[int]int, bigMax int, counts [15]int) {
-	const (
-		fontVariant = "Sans"
-		title       = "Adjacent Words"
-		xAxisLabel  = "Adjacent Counts"
-		yAxisLabel  = "% Words"
-	)
-	p := plot.New()
-	p.Legend.TextStyle.Font.Variant = fontVariant
-	p.Title.Text = title
-	p.Title.TextStyle.Font.Variant = fontVariant
-	p.Title.TextStyle.Font.Weight = 3 //font2.WeightBold
-	p.X.Label.Text = xAxisLabel
-	p.X.Label.TextStyle.Font.Variant = fontVariant
-	p.Y.Label.Text = yAxisLabel
-	p.Y.Label.TextStyle.Font.Variant = fontVariant
-
-	p.X.Tick.Label.Rotation = math.Pi / 2 //1.0472 // 60 degrees
-	p.X.Tick.Label.XAlign = text.XRight
-	p.X.Tick.Label.YAlign = text.YCenter
-	p.X.Tick.Label.Font.Variant = fontVariant
-	p.X.Padding = 5
+	p := newPlot("Adjacent Words Counts", "Number of Adjacent Words", "% of Words")
 
 	// make the legends appear above the plot area (by padding the title and shifting legends up)...
 	legendsHt := vg.Length(14) * p.Legend.TextStyle.Height("X")
@@ -402,9 +408,7 @@ func adjacentsChart(stats []map[int]int, bigMax int, counts [15]int) {
 		})
 	}
 	p.X.Tick.Marker = plot.ConstantTicks(ticks)
-
 	// plots...
-	plots := make([]any, 0)
 	for wl := 2; wl <= 15; wl++ {
 		m := stats[wl-2]
 		tot := float64(counts[wl-1])
@@ -414,14 +418,63 @@ func adjacentsChart(stats []map[int]int, bigMax int, counts [15]int) {
 				pts = append(pts, plotter.XY{X: float64(i), Y: (float64(n) / tot) * 100.0})
 			}
 		}
-		plots = append(plots, fmt.Sprintf("%d-letter words", wl), pts)
+		if l, s, err := plotter.NewLinePoints(pts); err == nil {
+			c, d := colorAndDashes(wl)
+			l.Color = c
+			l.Dashes = d
+			s.Color = c
+			s.Shape = nil
+			p.Add(l, s)
+			p.Legend.Add(fmt.Sprintf("%d-letter words", wl), l, s)
+		} else {
+			panic(err)
+		}
 	}
-	err := plotutil.AddLinePoints(p, plots...)
-	if err != nil {
-		panic(err)
-	}
-
 	if err := p.Save(800, 500+legendsHt, adjacentsChartFilename); err != nil {
 		panic(err)
 	}
+}
+
+func newPlot(title, xAxisLabel, yAxisLabel string) *plot.Plot {
+	const fontVariant = "Sans"
+	p := plot.New()
+	p.Legend.TextStyle.Font.Variant = fontVariant
+	p.Title.Text = title
+	p.Title.TextStyle.Font.Variant = fontVariant
+	p.Title.TextStyle.Font.Weight = 3 //font2.WeightBold
+
+	p.Y.Label.Text = yAxisLabel
+	p.Y.Label.TextStyle.Font.Variant = fontVariant
+	p.Y.Tick.Label.Font.Variant = fontVariant
+
+	p.X.Label.Text = xAxisLabel
+	p.X.Label.TextStyle.Font.Variant = fontVariant
+	p.X.Tick.Label.Font.Variant = fontVariant
+	p.X.Tick.Label.Rotation = math.Pi / 2 // 90 degrees
+	p.X.Tick.Label.XAlign = text.XRight
+	p.X.Tick.Label.YAlign = text.YCenter
+	p.X.Padding = 5
+	return p
+}
+
+func colorAndDashes(wordLen int) (color color.RGBA, dashes []vg.Length) {
+	i := wordLen - 2
+	color = defaultColors[i%len(defaultColors)]
+	if n := i / 5; n > 0 {
+		dashes = defaultDashes[n-1]
+	}
+	return
+}
+
+var defaultColors = []color.RGBA{
+	{31, 119, 180, 255}, // blue
+	{255, 127, 14, 255}, // orange
+	{44, 160, 44, 255},  // green
+	{214, 39, 40, 255},  // red
+	{23, 190, 207, 255}, // cyan
+}
+
+var defaultDashes = [][]vg.Length{
+	{vg.Points(6), vg.Points(2)},
+	{vg.Points(2), vg.Points(2)},
 }

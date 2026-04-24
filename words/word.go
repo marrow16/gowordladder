@@ -2,44 +2,34 @@ package words
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
 const reservedPatternChar = '_'
 
-type Word interface {
-	addLink(otherWord Word)
-	LinkedWords() []Word
-	Variations() []string
-	IsIsland() bool
-	IsDoublet() bool
-	Differences(other Word) int
-	ActualWord() string
-	MaxSteps() int
-}
-
-type word struct {
+type Word struct {
 	actualWord  string
-	linkedWords []Word
+	linkedWords []*Word
 	maxSteps    int
 }
 
-func newWord(actualWord string, maxSteps int) Word {
+func newWord(actualWord string, maxSteps int) *Word {
 	if strings.ContainsRune(actualWord, reservedPatternChar) {
 		panic(any(fmt.Sprintf("Word cannot contain reserved character - '%v'", reservedPatternChar)))
 	}
-	return &word{
+	return &Word{
 		actualWord:  strings.ToUpper(actualWord),
-		linkedWords: make([]Word, 0),
+		linkedWords: make([]*Word, 0),
 		maxSteps:    maxSteps,
 	}
 }
 
-func (w *word) LinkedWords() []Word {
-	return w.linkedWords
+func (w *Word) LinkedWords() []*Word {
+	return slices.Clone(w.linkedWords)
 }
 
-func (w *word) Variations() []string {
+func (w *Word) Variations() []string {
 	result := make([]string, len(w.actualWord))
 	for i := range w.actualWord {
 		patt := []rune(w.actualWord)
@@ -49,19 +39,19 @@ func (w *word) Variations() []string {
 	return result
 }
 
-func (w *word) addLink(otherWord Word) {
+func (w *Word) addLink(otherWord *Word) {
 	w.linkedWords = append(w.linkedWords, otherWord)
 }
 
-func (w *word) IsIsland() bool {
+func (w *Word) IsIsland() bool {
 	return len(w.linkedWords) == 0
 }
 
-func (w *word) IsDoublet() bool {
+func (w *Word) IsDoublet() bool {
 	return w.maxSteps == 2
 }
 
-func (w *word) Differences(other Word) int {
+func (w *Word) Differences(other *Word) int {
 	diffs := 0
 	for i := range w.actualWord {
 		if w.actualWord[i] != other.ActualWord()[i] {
@@ -71,10 +61,10 @@ func (w *word) Differences(other Word) int {
 	return diffs
 }
 
-func (w *word) ActualWord() string {
+func (w *Word) ActualWord() string {
 	return w.actualWord
 }
 
-func (w *word) MaxSteps() int {
+func (w *Word) MaxSteps() int {
 	return w.maxSteps
 }

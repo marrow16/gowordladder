@@ -40,9 +40,10 @@ var expectedMaxSteps = map[int]int{
 
 func TestCanLoadDictionariesFromFactory(t *testing.T) {
 	for k, v := range expectedDictionarySizes {
-		d := LoadDictionary(k)
+		d := NewDictionary(k)
 		assert.Equal(t, v, d.Len())
 		assert.Equal(t, k, d.WordLength())
+		assert.Len(t, d.Words(), v)
 		assert.Equal(t, expectedMaxSteps[k], d.MaxSteps())
 		for i := 3; i <= expectedMaxSteps[k]; i++ {
 			assert.True(t, len(d.WordsWithSteps(i)) > 0)
@@ -60,16 +61,16 @@ func TestCanLoadDictionariesFromConstructor(t *testing.T) {
 
 func TestDictionaryFromFactorySameAsConstructed(t *testing.T) {
 	newDict := NewDictionary(3)
-	dictFromFactory := LoadDictionary(3)
+	dictFromFactory := NewDictionary(3)
 	assert.Equal(t, newDict, dictFromFactory)
 }
 
 func TestFailsToLoadInvalidWordLengths(t *testing.T) {
 	assert.Panics(t, func() {
-		LoadDictionary(1)
+		NewDictionary(1)
 	})
 	assert.Panics(t, func() {
-		LoadDictionary(16)
+		NewDictionary(16)
 	})
 }
 
@@ -109,7 +110,7 @@ func TestWordsAreInterlinked(t *testing.T) {
 	}
 }
 
-func contains(s []Word, e Word) bool {
+func contains(s []*Word, e *Word) bool {
 	for _, a := range s {
 		if a == e {
 			return true

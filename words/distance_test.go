@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-func TestIslandWordHasLimitedMap(t *testing.T) {
-	d := LoadDictionary(3)
+func TestWordDistanceMap_IslandWord(t *testing.T) {
+	d := NewDictionary(3)
 	w, ok := d.Word("iwi")
 	assert.True(t, ok)
 	assert.True(t, w.IsIsland())
@@ -18,8 +18,8 @@ func TestIslandWordHasLimitedMap(t *testing.T) {
 	assert.Equal(t, 1, dist)
 }
 
-func TestCatMap(t *testing.T) {
-	d := LoadDictionary(3)
+func TestWordDistanceMap(t *testing.T) {
+	d := NewDictionary(3)
 	w, ok := d.Word("cat")
 	assert.True(t, ok)
 
@@ -38,10 +38,12 @@ func TestCatMap(t *testing.T) {
 	assert.False(t, wordDistMap.Reachable(endWord, 3))
 	assert.False(t, wordDistMap.Reachable(endWord, 2))
 	assert.False(t, wordDistMap.Reachable(endWord, 1))
+	notReachable, _ := d.Word("iwi")
+	assert.False(t, wordDistMap.Reachable(notReachable, 100))
 }
 
-func TestCatMapLimited(t *testing.T) {
-	d := LoadDictionary(3)
+func TestWordDistanceMap_Limited(t *testing.T) {
+	d := NewDictionary(3)
 	w, ok := d.Word("cat")
 	assert.True(t, ok)
 
@@ -62,4 +64,33 @@ func TestCatMapLimited(t *testing.T) {
 	assert.Equal(t, 345, len(wordDistMap))
 	_, hasWord = wordDistMap.Distance(endWord)
 	assert.False(t, hasWord)
+}
+
+func TestWordDistanceMap_Words(t *testing.T) {
+	d := NewDictionary(3)
+	w, ok := d.Word("cat")
+	assert.True(t, ok)
+
+	limit := 3
+	wordDistMap := NewWordDistanceMap(w, &limit)
+	assert.Len(t, wordDistMap.Words(), 344)
+}
+
+func TestWordDistanceMap_WordsAt(t *testing.T) {
+	d := NewDictionary(3)
+	w, ok := d.Word("cat")
+	assert.True(t, ok)
+
+	wordDistMap := NewWordDistanceMap(w, nil)
+	assert.Len(t, wordDistMap.WordsAt(2), 33)
+	assert.Len(t, wordDistMap.WordsAt(w.MaxSteps()), 1)
+}
+
+func TestWordDistanceMap_MaxDistance(t *testing.T) {
+	d := NewDictionary(3)
+	w, ok := d.Word("cat")
+	assert.True(t, ok)
+
+	wordDistMap := NewWordDistanceMap(w, nil)
+	assert.Equal(t, w.MaxSteps(), wordDistMap.MaxDistance())
 }

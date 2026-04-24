@@ -15,9 +15,9 @@ var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
 type Puzzle struct {
 	WordLength            int
 	LadderLength          int
-	StartWord             words.Word
-	EndWord               words.Word
-	Solutions             []solving.Solution
+	StartWord             *words.Word
+	EndWord               *words.Word
+	Solutions             []*solving.Solution
 	MaxScore              float64
 	RungScore             float64
 	DeductionWholeWord    float64
@@ -33,7 +33,7 @@ func GeneratePuzzle(wordLength int, ladderLength int, startWord, endWord *string
 	if ladderLength > dictionary.MaxSteps() {
 		return nil, fmt.Errorf("ladderLength must not be greater than %d", dictionary.MaxSteps())
 	}
-	var start, end words.Word
+	var start, end *words.Word
 	flip := false
 	useStartWord, useEndWord := startWord, endWord
 	if startWord == nil && endWord != nil {
@@ -88,7 +88,7 @@ func GeneratePuzzle(wordLength int, ladderLength int, startWord, endWord *string
 	}
 	s := solving.NewSolver(solving.NewPuzzle(result.StartWord, result.EndWord))
 	candidates := s.Solve(ladderLength)
-	result.Solutions = make([]solving.Solution, 0, len(candidates))
+	result.Solutions = make([]*solving.Solution, 0, len(candidates))
 	for _, candidate := range candidates {
 		if len(candidate.Ladder()) == ladderLength {
 			result.Solutions = append(result.Solutions, candidate)
@@ -97,7 +97,7 @@ func GeneratePuzzle(wordLength int, ladderLength int, startWord, endWord *string
 	if len(result.Solutions) == 0 {
 		return nil, fmt.Errorf("sorry, generated a puzzle with no solutions found")
 	}
-	result.MaxScore = math.Round(((float64(ladderLength) * 5.0) + (float64(wordLength) * 3.5) - (math.Log2(float64(len(result.Solutions))) * 2.5)) * 100)
+	result.MaxScore = math.Round(((float64(ladderLength) * 5.0) + (float64(wordLength) * 2.0) - (math.Log2(float64(len(result.Solutions))) * 2.5)) * 100)
 	hiddenSteps := ladderLength - 2
 	result.RungScore = math.Ceil(result.MaxScore / float64(hiddenSteps))
 	result.DeductionWholeWord = result.RungScore

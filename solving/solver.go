@@ -8,13 +8,13 @@ import (
 type Solver struct {
 	puzzle              *Puzzle
 	exploredCount       int
-	solutions           []Solution
-	startWord           words.Word
-	endWord             words.Word
+	solutions           []*Solution
+	startWord           *words.Word
+	endWord             *words.Word
 	reversed            bool
 	maximumLadderLength int
 	endDistances        words.WordDistanceMap
-	sync                *sync.Mutex
+	mutex               sync.Mutex
 	waitGroup           *sync.WaitGroup
 }
 
@@ -25,13 +25,12 @@ type incrementable interface {
 func NewSolver(puzzle *Puzzle) (result *Solver) {
 	return &Solver{
 		puzzle: puzzle,
-		sync:   &sync.Mutex{},
 	}
 }
 
-func (s *Solver) Solve(maximumLadderLength int) []Solution {
+func (s *Solver) Solve(maximumLadderLength int) []*Solution {
 	s.exploredCount = 0
-	s.solutions = make([]Solution, 0)
+	s.solutions = make([]*Solution, 0)
 	s.maximumLadderLength = maximumLadderLength
 	if maximumLadderLength < 1 {
 		return s.solutions
@@ -87,8 +86,8 @@ func (s *Solver) explore(candidate *candidateSolution) {
 	defer s.waitGroup.Done()
 	lastWord := candidate.lastWord()
 	if lastWord == s.endWord {
-		s.sync.Lock()
-		defer s.sync.Unlock()
+		s.mutex.Lock()
+		defer s.mutex.Unlock()
 		s.addSolution(candidate.asFoundSolution(s.reversed))
 		return
 	}
@@ -106,7 +105,7 @@ func (s *Solver) explore(candidate *candidateSolution) {
 
 func (s *Solver) shortCircuitLadderLength3() {
 	// we can determine solutions by convergence of the two linked word sets...
-	startSet := make(map[string]words.Word, len(s.startWord.LinkedWords()))
+	startSet := make(map[string]*words.Word, len(s.startWord.LinkedWords()))
 	for _, w := range s.startWord.LinkedWords() {
 		startSet[w.ActualWord()] = w
 	}
@@ -117,15 +116,13 @@ func (s *Solver) shortCircuitLadderLength3() {
 	}
 }
 
-func (s *Solver) addSolution(sol Solution) {
+func (s *Solver) addSolution(sol *Solution) {
 	s.solutions = append(s.solutions, sol)
 }
 
 func (s *Solver) incrementExplored() {
-	if s.sync != nil {
-		defer s.sync.Unlock()
-		s.sync.Lock()
-	}
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	s.exploredCount++
 }
 

@@ -4,34 +4,27 @@ import (
 	"bufio"
 	"fmt"
 	"gowordladder/words/resources"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
 )
 
-type Dictionary interface {
-	Word(s string) (word Word, ok bool)
-	Len() int
-	WordLength() int
-	MaxSteps() int
-	WordsWithSteps(steps int) []Word
-	Words() []Word
-}
-
-type dictionary struct {
+type Dictionary struct {
 	wordLength   int
-	words        map[string]Word
-	wordsBySteps map[int][]Word
+	words        map[string]*Word
+	wordsBySteps map[int][]*Word
 	maxSteps     int
 }
 
-func NewDictionary(wordLength int) Dictionary {
-	var result Dictionary
+func NewDictionary(wordLength int) (result *Dictionary) {
+	cache.mutex.Lock()
+	defer cache.mutex.Unlock()
 	if existing, ok := cache.dictionaries[wordLength]; !ok {
-		newDict := &dictionary{
+		newDict := &Dictionary{
 			wordLength:   wordLength,
-			words:        make(map[string]Word),
-			wordsBySteps: make(map[int][]Word),
+			words:        make(map[string]*Word),
+			wordsBySteps: make(map[int][]*Word),
 		}
 		newDict.load()
 		cache.dictionaries[wordLength] = newDict
@@ -42,7 +35,7 @@ func NewDictionary(wordLength int) Dictionary {
 	return result
 }
 
-func (d *dictionary) load() {
+func (d *Dictionary) load() {
 	file, err := resources.Files.Open("dictionary-" + strconv.Itoa(d.wordLength) + "-letter-words.txt")
 	if err != nil {
 		panic(any(err.Error()))
@@ -52,41 +45,42 @@ func (d *dictionary) load() {
 	}()
 
 	scanner := bufio.NewScanner(file)
-	builder := &wordLinkageBuilder{variations: map[string][]Word{}}
+	builder := &wordLinkageBuilder{variations: map[string][]*Word{}}
 	for scanner.Scan() {
 		d.addWord(scanner.Text(), builder)
 	}
 }
 
-func (d *dictionary) Word(s string) (word Word, ok bool) {
+func (d *Dictionary) Word(s string) (word *Word, ok bool) {
 	word, ok = d.words[strings.ToUpper(s)]
 	return
 }
 
-func (d *dictionary) Len() int {
+func (d *Dictionary) Len() int {
 	return len(d.words)
 }
 
-func (d *dictionary) MaxSteps() int {
+func (d *Dictionary) MaxSteps() int {
 	return d.maxSteps
 }
 
-func (d *dictionary) WordLength() int {
+func (d *Dictionary) WordLength() int {
 	return d.wordLength
 }
 
-func (d *dictionary) WordsWithSteps(steps int) []Word {
-	return d.wordsBySteps[steps]
+func (d *Dictionary) WordsWithSteps(steps int) []*Word {
+	return slices.Clone(d.wordsBySteps[steps])
 }
 
-func (d *dictionary) Words() (result []Word) {
+func (d *Dictionary) Words() (result []*Word) {
+	result = make([]*Word, 0, len(d.words))
 	for _, w := range d.words {
 		result = append(result, w)
 	}
 	return result
 }
 
-func (d *dictionary) addWord(line string, builder *wordLinkageBuilder) {
+func (d *Dictionary) addWord(line string, builder *wordLinkageBuilder) {
 	if parts := strings.Split(line, "\t"); len(parts) == 2 {
 		actualWord, n := parts[0], parts[1]
 		maxSteps, _ := strconv.Atoi(n)
@@ -107,10 +101,10 @@ func (d *dictionary) addWord(line string, builder *wordLinkageBuilder) {
 }
 
 type wordLinkageBuilder struct {
-	variations map[string][]Word
+	variations map[string][]*Word
 }
 
-func (b *wordLinkageBuilder) link(word Word) {
+func (b *wordLinkageBuilder) link(word *Word) {
 	for _, variant := range word.Variations() {
 		for _, link := range b.variations[variant] {
 			link.addLink(word)
@@ -121,26 +115,17 @@ func (b *wordLinkageBuilder) link(word Word) {
 }
 
 type dictionaryCache struct {
-	dictionaries map[int]Dictionary
+	dictionaries map[int]*Dictionary
+	mutex        sync.Mutex
 }
 
-var once sync.Once
 var (
+	once  sync.Once
 	cache *dictionaryCache
 )
 
 func init() {
 	once.Do(func() {
-		cache = &dictionaryCache{dictionaries: map[int]Dictionary{}}
+		cache = &dictionaryCache{dictionaries: map[int]*Dictionary{}}
 	})
-}
-
-func LoadDictionary(wordLength int) (result Dictionary) {
-	if existing, ok := cache.dictionaries[wordLength]; !ok {
-		result = NewDictionary(wordLength)
-		cache.dictionaries[wordLength] = result
-	} else {
-		result = existing
-	}
-	return
 }

@@ -7,7 +7,7 @@ import (
 )
 
 func TestSolveCatToDog(t *testing.T) {
-	dict := words.LoadDictionary(3)
+	dict := words.NewDictionary(3)
 	cat, _ := dict.Word("cat")
 	dog, _ := dict.Word("dog")
 	solver := NewSolver(NewPuzzle(cat, dog))
@@ -40,7 +40,7 @@ func TestSolveCatToDog(t *testing.T) {
 }
 
 func TestSolveColdToWarmAndWarmToCold(t *testing.T) {
-	dict := words.LoadDictionary(4)
+	dict := words.NewDictionary(4)
 	cold, _ := dict.Word("cold")
 	warm, _ := dict.Word("warm")
 	solver := NewSolver(NewPuzzle(cold, warm))
@@ -57,7 +57,7 @@ func TestSolveColdToWarmAndWarmToCold(t *testing.T) {
 }
 
 func TestSolveKataToJava(t *testing.T) {
-	dict := words.LoadDictionary(4)
+	dict := words.NewDictionary(4)
 	kata, _ := dict.Word("kata")
 	java, _ := dict.Word("java")
 	solver := NewSolver(NewPuzzle(kata, java))
@@ -72,7 +72,7 @@ func TestSolveKataToJava(t *testing.T) {
 }
 
 func TestSameWordSolvable(t *testing.T) {
-	dict := words.LoadDictionary(3)
+	dict := words.NewDictionary(3)
 	cat, _ := dict.Word("cat")
 	solver := NewSolver(NewPuzzle(cat, cat))
 	solutions := solver.Solve(1)
@@ -81,7 +81,7 @@ func TestSameWordSolvable(t *testing.T) {
 }
 
 func TestOneLetterDifferenceIsSolvable(t *testing.T) {
-	dict := words.LoadDictionary(3)
+	dict := words.NewDictionary(3)
 	cat, _ := dict.Word("cat")
 	cot, _ := dict.Word("cot")
 	solver := NewSolver(NewPuzzle(cat, cot))
@@ -91,7 +91,7 @@ func TestOneLetterDifferenceIsSolvable(t *testing.T) {
 }
 
 func TestTwoLettersDifferenceIsSolvable(t *testing.T) {
-	dict := words.LoadDictionary(3)
+	dict := words.NewDictionary(3)
 	cat, _ := dict.Word("cat")
 	bar, _ := dict.Word("bar")
 	solver := NewSolver(NewPuzzle(cat, bar))
@@ -101,7 +101,7 @@ func TestTwoLettersDifferenceIsSolvable(t *testing.T) {
 }
 
 func TestEverythingUnsolvableWithBadMaxLadderLength(t *testing.T) {
-	dict := words.LoadDictionary(3)
+	dict := words.NewDictionary(3)
 	cat, _ := dict.Word("cat")
 	dog, _ := dict.Word("dog")
 	solver := NewSolver(NewPuzzle(cat, dog))
@@ -118,7 +118,7 @@ func TestEverythingUnsolvableWithBadMaxLadderLength(t *testing.T) {
 }
 
 func TestShortCircuitOnOneLetterDifference(t *testing.T) {
-	dict := words.LoadDictionary(3)
+	dict := words.NewDictionary(3)
 	cat, _ := dict.Word("cat")
 	cot, _ := dict.Word("cot")
 	solver := NewSolver(NewPuzzle(cat, cot))

@@ -12,9 +12,9 @@ import (
 func TestMaxDistances_Verify(t *testing.T) {
 	for wl := 2; wl <= 15; wl++ {
 		t.Run(fmt.Sprintf("%d-letter words", wl), func(t *testing.T) {
-			d := words.LoadDictionary(wl)
+			d := words.NewDictionary(wl)
 			wds := d.Words()
-			slices.SortFunc(wds, func(a, b words.Word) int {
+			slices.SortFunc(wds, func(a, b *words.Word) int {
 				return strings.Compare(a.ActualWord(), b.ActualWord())
 			})
 			for _, w := range wds {
