@@ -25,10 +25,10 @@ func (p *Puzzle) CalculateMinimumLadderLength() (min int, ok bool) {
 		{
 			startSet := make(map[string]*words.Word, len(start.LinkedWords()))
 			for _, w := range start.LinkedWords() {
-				startSet[w.ActualWord()] = w
+				startSet[w.String()] = w
 			}
 			for _, w := range end.LinkedWords() {
-				if _, ok := startSet[w.ActualWord()]; ok {
+				if _, ok := startSet[w.String()]; ok {
 					return 3, true
 				}
 			}

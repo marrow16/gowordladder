@@ -63,7 +63,7 @@ func GeneratePuzzle(wordLength int, ladderLength int, startWord, endWord *string
 		}
 		end = w
 		if !wdm.Reachable(end, ladderLength) {
-			return nil, fmt.Errorf("word %q cannot be reached from word %q", end.ActualWord(), start.ActualWord())
+			return nil, fmt.Errorf("word %q cannot be reached from word %q", end, start)
 		}
 	} else {
 		// pick a random end word...

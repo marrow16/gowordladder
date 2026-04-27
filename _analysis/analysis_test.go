@@ -182,7 +182,7 @@ func TestAnalysisReport(t *testing.T) {
 	solutions := make([]*solving.Solution, 0)
 	alts := make([]int, 0)
 	for _, wd := range wds {
-		sw := wd.ActualWord()
+		sw := wd.String()
 		puzzle, err := generator.GeneratePuzzle(bigMaxWordLen, bigMax, &sw, nil)
 		require.NoError(t, err)
 		solutions = append(solutions, puzzle.Solutions[0])
@@ -191,7 +191,7 @@ func TestAnalysisReport(t *testing.T) {
 	for l := 0; l < bigMax; l++ {
 		_, _ = fmt.Fprint(f, "\n|")
 		for _, s := range solutions {
-			_, _ = fmt.Fprintf(f, " `%s` |", s.Ladder()[l].ActualWord())
+			_, _ = fmt.Fprintf(f, " `%s` |", s.Ladder()[l])
 		}
 	}
 	_, _ = fmt.Fprint(f, "\n|")

@@ -107,10 +107,10 @@ func (s *Solver) shortCircuitLadderLength3() {
 	// we can determine solutions by convergence of the two linked word sets...
 	startSet := make(map[string]*words.Word, len(s.startWord.LinkedWords()))
 	for _, w := range s.startWord.LinkedWords() {
-		startSet[w.ActualWord()] = w
+		startSet[w.String()] = w
 	}
 	for _, w := range s.endWord.LinkedWords() {
-		if _, ok := startSet[w.ActualWord()]; ok {
+		if _, ok := startSet[w.String()]; ok {
 			s.addSolution(newSolution(s.startWord, w, s.endWord))
 		}
 	}

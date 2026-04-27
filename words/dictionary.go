@@ -89,7 +89,7 @@ func (d *Dictionary) addWord(line string, builder *wordLinkageBuilder) {
 		}
 		if len(actualWord) == d.wordLength {
 			w := newWord(actualWord, maxSteps)
-			d.words[w.ActualWord()] = w
+			d.words[w.String()] = w
 			for i := 3; i <= maxSteps; i++ {
 				d.wordsBySteps[i] = append(d.wordsBySteps[i], w)
 			}

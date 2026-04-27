@@ -53,7 +53,7 @@ func solveNow(args []string) {
 		println(fmt.Sprintf("Took %s to determine minimum ladder length of %d", dur, maxLadderLength))
 	}
 	println(fmt.Sprintf("Solving %s to %s (maximum steps: %d)",
-		green(startWord.ActualWord()), green(endWord.ActualWord()), maxLadderLength))
+		green(startWord.String()), green(endWord.String()), maxLadderLength))
 	solver := solving.NewSolver(puzzle)
 	start = time.Now()
 	solutions := solver.Solve(maxLadderLength)
@@ -72,9 +72,9 @@ func SortSolutions(solutions []*solving.Solution) {
 			return true
 		} else if len(solutions[i].Ladder()) == len(solutions[j].Ladder()) {
 			for idx, w := range solutions[i].Ladder() {
-				if w.ActualWord() < solutions[j].Ladder()[idx].ActualWord() {
+				if w.String() < solutions[j].Ladder()[idx].String() {
 					return true
-				} else if w.ActualWord() > solutions[j].Ladder()[idx].ActualWord() {
+				} else if w.String() > solutions[j].Ladder()[idx].String() {
 					return false
 				}
 			}

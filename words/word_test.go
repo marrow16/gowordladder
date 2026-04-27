@@ -7,7 +7,7 @@ import (
 
 func TestCanCreateWord(t *testing.T) {
 	w := newWord("cat", 0)
-	assert.Equal(t, "CAT", w.ActualWord())
+	assert.Equal(t, "CAT", w.String())
 }
 
 func TestFailsWithInvalidPatternChar(t *testing.T) {

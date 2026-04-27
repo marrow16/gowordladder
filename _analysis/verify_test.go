@@ -15,14 +15,14 @@ func TestMaxDistances_Verify(t *testing.T) {
 			d := words.NewDictionary(wl)
 			wds := d.Words()
 			slices.SortFunc(wds, func(a, b *words.Word) int {
-				return strings.Compare(a.ActualWord(), b.ActualWord())
+				return strings.Compare(a.String(), b.String())
 			})
 			for _, w := range wds {
-				aw := w.ActualWord()
+				aw := w.String()
 				_ = aw
 				wdm := words.NewWordDistanceMap(w, nil)
 				mx := wdm.MaxDistance()
-				assert.Equal(t, w.MaxSteps(), mx, "max distance %q = %d - should be %d", w.ActualWord(), w.MaxSteps(), mx)
+				assert.Equal(t, w.MaxSteps(), mx, "max distance %q = %d - should be %d", w, w.MaxSteps(), mx)
 			}
 		})
 	}

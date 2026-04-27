@@ -4,7 +4,7 @@ type WordDistanceMap map[string]int
 
 func NewWordDistanceMap(word *Word, maximumLadderLength *int) WordDistanceMap {
 	result := make(WordDistanceMap)
-	result[word.ActualWord()] = 1
+	result[word.String()] = 1
 	maxDistance := word.MaxSteps()
 	if maximumLadderLength != nil {
 		maxDistance = *maximumLadderLength
@@ -15,12 +15,12 @@ func NewWordDistanceMap(word *Word, maximumLadderLength *int) WordDistanceMap {
 	for head < len(q) {
 		nextWord := q[head]
 		head++
-		distance := result[nextWord.ActualWord()] + 1
+		distance := result[nextWord.String()] + 1
 		if distance <= maxDistance {
 			for _, linkedWord := range nextWord.LinkedWords() {
-				if _, ok := result[linkedWord.ActualWord()]; !ok {
+				if _, ok := result[linkedWord.String()]; !ok {
 					q = append(q, linkedWord)
-					result[linkedWord.ActualWord()] = distance
+					result[linkedWord.String()] = distance
 				}
 			}
 		}
@@ -29,12 +29,12 @@ func NewWordDistanceMap(word *Word, maximumLadderLength *int) WordDistanceMap {
 }
 
 func (m WordDistanceMap) Distance(word *Word) (dist int, ok bool) {
-	dist, ok = m[word.ActualWord()]
+	dist, ok = m[word.String()]
 	return
 }
 
 func (m WordDistanceMap) Reachable(word *Word, maximumLadderLength int) bool {
-	if distance, ok := m[word.ActualWord()]; ok {
+	if distance, ok := m[word.String()]; ok {
 		return distance <= maximumLadderLength
 	}
 	return false

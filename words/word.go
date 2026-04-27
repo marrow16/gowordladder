@@ -54,14 +54,14 @@ func (w *Word) IsDoublet() bool {
 func (w *Word) Differences(other *Word) int {
 	diffs := 0
 	for i := range w.actualWord {
-		if w.actualWord[i] != other.ActualWord()[i] {
+		if w.actualWord[i] != other.String()[i] {
 			diffs++
 		}
 	}
 	return diffs
 }
 
-func (w *Word) ActualWord() string {
+func (w *Word) String() string {
 	return w.actualWord
 }
 

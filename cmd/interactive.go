@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"gowordladder/generator"
 	"gowordladder/solving"
 	"gowordladder/words"
 	"math/rand"
@@ -21,20 +22,12 @@ const (
 const (
 	appName             = "WordLadder"
 	prompt              = appName + "> "
+	promptStartWord     = prompt + "Enter start word: "
+	promptFinalWord     = prompt + "Enter final word: "
 	minimumWordLength   = 2
 	maximumWordLength   = 15
 	minimumLadderLength = 2
-	//maximumLadderLength = 20
 )
-
-var steps = []struct {
-	step   int
-	prompt string
-}{
-	{0, prompt + "Enter start word: "},
-	{1, prompt + "Enter final word: "},
-	{2, ""},
-}
 
 type interactive struct {
 	onStep              int
@@ -48,11 +41,11 @@ type interactive struct {
 func newInteractive(args []string) *interactive {
 	result := &interactive{onStep: 0}
 	if len(args) >= 1 {
-		println(steps[0].prompt + green(args[0]))
+		println(promptStartWord + green(args[0]))
 		if result.setStartWord(args[0]) {
 			result.onStep++
 			if len(args) >= 2 {
-				println(steps[1].prompt + green(args[1]))
+				println(promptFinalWord + green(args[1]))
 				if result.setEndWord(args[1]) {
 					result.onStep++
 				}
@@ -65,7 +58,7 @@ func newInteractive(args []string) *interactive {
 func (i *interactive) Run() {
 	again := true
 	for again {
-		for i.onStep < len(steps) {
+		for i.onStep < 3 {
 			i.processStepInput()
 		}
 		i.onStep = 0
@@ -84,13 +77,15 @@ func (i *interactive) Run() {
 }
 
 func (i *interactive) processStepInput() {
-	reader := bufio.NewReader(os.Stdin)
-	if i.onStep == 2 {
-		txt := prompt + "Maximum ladder length? [" + fmt.Sprintf("%d-%d", minimumLadderLength, i.dictionary.MaxSteps()) + ", or return]: "
-		print(txt + terminalColourGreen)
-	} else {
-		print(steps[i.onStep].prompt + terminalColourGreen)
+	switch i.onStep {
+	case 0:
+		print(promptStartWord + terminalColourGreen)
+	case 1:
+		print(promptFinalWord + terminalColourGreen)
+	case 2:
+		print(prompt + "Maximum ladder length? [" + fmt.Sprintf("%d-%d", minimumLadderLength, i.dictionary.MaxSteps()) + ", or return]: " + terminalColourGreen)
 	}
+	reader := bufio.NewReader(os.Stdin)
 	input, err := reader.ReadString('\n')
 	print(terminalColourBlack)
 	if err != nil {
@@ -123,9 +118,54 @@ func (i *interactive) loadDictionary(wordLength int) {
 
 var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
 
+func isLengths(input string) (is bool, wordLength int, ladderLength int) {
+	ladderLength = -1
+	if n, err := strconv.Atoi(input); err == nil && n >= minimumWordLength && n <= maximumWordLength {
+		is = true
+		wordLength = n
+	} else if parts := strings.Split(input, ","); len(parts) == 2 {
+		if n1, err := strconv.Atoi(parts[0]); err == nil && n1 >= minimumWordLength && n1 <= maximumWordLength {
+			wordLength = n1
+			if n2, err := strconv.Atoi(parts[1]); err == nil && n2 >= minimumLadderLength {
+				ladderLength = n2
+				is = true
+			}
+		}
+	}
+	return is, wordLength, ladderLength
+}
+
 func (i *interactive) setStartWord(input string) bool {
+	if is, wordLength, ladderLength := isLengths(input); is {
+		i.loadDictionary(wordLength)
+		if ladderLength == -1 {
+			candidates := i.dictionary.WordsWithSteps(3)
+			i.startWord = candidates[rng.Intn(len(candidates))]
+			println(green(fmt.Sprintf("                      Random: %s", i.startWord)))
+			return true
+		}
+		if ladderLength > i.dictionary.MaxSteps() {
+			println(red(fmt.Sprintf("            Dictionary %d-letters does not have ladders of length %d (max is %d)!", wordLength, ladderLength, i.dictionary.MaxSteps())))
+			return false
+		}
+		puzzle, err := generator.GeneratePuzzle(wordLength, ladderLength, nil, nil)
+		if err != nil {
+			println(red(fmt.Sprintf("            %s", err.Error())))
+			return false
+		}
+		i.startWord = puzzle.StartWord
+		i.endWord = puzzle.EndWord
+		i.maximumLadderLength = ladderLength
+		println(green(fmt.Sprintf("                      Random: %s", i.startWord)))
+		i.onStep++
+		println(promptFinalWord + green(i.endWord.String()))
+		println(prompt + "   Ladder length: " + green(strconv.Itoa(ladderLength)))
+		i.onStep++
+		return true
+	}
 	if len(input) < minimumWordLength || len(input) > maximumWordLength {
-		println(red(fmt.Sprintf("            Please enter a word with between %d and %d characters!", minimumWordLength, maximumWordLength)))
+		println(red(fmt.Sprintf("            Enter a word with between %d and %d characters!", minimumWordLength, maximumWordLength)))
+		println(red(fmt.Sprintf("            Or enter a number (%d to %d) for random words of that length", minimumWordLength, maximumWordLength)))
 		return false
 	}
 	i.loadDictionary(len(input))
@@ -133,7 +173,7 @@ func (i *interactive) setStartWord(input string) bool {
 		ladderLen := rng.Intn(i.dictionary.MaxSteps()-2) + 3
 		candidates := i.dictionary.WordsWithSteps(ladderLen)
 		i.startWord = candidates[rng.Intn(len(candidates))]
-		println(green(fmt.Sprintf("                      Random: %s", i.startWord.ActualWord())))
+		println(green(fmt.Sprintf("                      Random: %s", i.startWord)))
 		return true
 	}
 	if w, ok := i.dictionary.Word(input); !ok {
@@ -153,13 +193,12 @@ func (i *interactive) setEndWord(input string) bool {
 		wm := words.NewWordDistanceMap(i.startWord, nil)
 		candidates := wm.Words()
 		if len(candidates) == 0 {
-			println(red("            Cannot find random final word!"))
-			i.onStep--
+			println(red("            Cannot find random final word (try again)!"))
 			return false
 		}
 		input = candidates[rng.Intn(len(candidates))]
 		i.endWord, _ = i.dictionary.Word(input)
-		println(green(fmt.Sprintf("                      Random: %s", i.endWord.ActualWord())))
+		println(green(fmt.Sprintf("                      Random: %s", i.endWord)))
 		return true
 	}
 	if len(input) != i.dictionary.WordLength() {
@@ -204,7 +243,7 @@ func (i *interactive) solve() {
 		minLen, solvable := puzzle.CalculateMinimumLadderLength()
 		dur := time.Now().Sub(start)
 		if !solvable {
-			println(red("Cannot solve `" + i.startWord.ActualWord() + "' to '" + i.endWord.ActualWord() + "'!"))
+			println(red("Cannot solve `" + i.startWord.String() + "' to '" + i.endWord.String() + "'!"))
 		}
 		i.maximumLadderLength = minLen
 		println("Took " + green(fmt.Sprintf("%s", dur)) +

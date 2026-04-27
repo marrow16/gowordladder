@@ -21,7 +21,7 @@ func (s *Solution) String() string {
 		if i > 0 {
 			sb.WriteString(",")
 		}
-		sb.WriteString(w.ActualWord())
+		sb.WriteString(w.String())
 	}
 	sb.WriteString("]")
 	return sb.String()
@@ -71,7 +71,7 @@ func (s *candidateSolution) lastWord() *words.Word {
 }
 
 func (s *candidateSolution) seen(word *words.Word) bool {
-	return s.seenWords[word.ActualWord()]
+	return s.seenWords[word.String()]
 }
 
 func (s *candidateSolution) asFoundSolution(reversed bool) *Solution {
@@ -89,5 +89,5 @@ func (s *candidateSolution) asFoundSolution(reversed bool) *Solution {
 
 func (s *candidateSolution) addWord(word *words.Word) {
 	s.ladder = append(s.ladder, word)
-	s.seenWords[word.ActualWord()] = true
+	s.seenWords[word.String()] = true
 }

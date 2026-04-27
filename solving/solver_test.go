@@ -18,17 +18,17 @@ func TestSolveCatToDog(t *testing.T) {
 	midWords := &map[string]int{}
 	for _, solution := range solutions {
 		assert.Equal(t, 4, len(solution.Ladder()))
-		assert.Equal(t, "CAT", solution.Ladder()[0].ActualWord())
-		assert.Equal(t, "DOG", solution.Ladder()[3].ActualWord())
-		if x, ok := (*midWords)[solution.Ladder()[1].ActualWord()]; ok {
-			(*midWords)[solution.Ladder()[1].ActualWord()] = x + 1
+		assert.Equal(t, "CAT", solution.Ladder()[0].String())
+		assert.Equal(t, "DOG", solution.Ladder()[3].String())
+		if x, ok := (*midWords)[solution.Ladder()[1].String()]; ok {
+			(*midWords)[solution.Ladder()[1].String()] = x + 1
 		} else {
-			(*midWords)[solution.Ladder()[1].ActualWord()] = 1
+			(*midWords)[solution.Ladder()[1].String()] = 1
 		}
-		if x, ok := (*midWords)[solution.Ladder()[2].ActualWord()]; ok {
-			(*midWords)[solution.Ladder()[2].ActualWord()] = x + 1
+		if x, ok := (*midWords)[solution.Ladder()[2].String()]; ok {
+			(*midWords)[solution.Ladder()[2].String()] = x + 1
 		} else {
-			(*midWords)[solution.Ladder()[2].ActualWord()] = 1
+			(*midWords)[solution.Ladder()[2].String()] = 1
 		}
 	}
 	assert.Equal(t, 5, len(*midWords))
@@ -66,9 +66,9 @@ func TestSolveKataToJava(t *testing.T) {
 
 	solution := solutions[0]
 	assert.Equal(t, 3, len(solution.Ladder()))
-	assert.Equal(t, "KATA", solution.Ladder()[0].ActualWord())
-	assert.Equal(t, "KAVA", solution.Ladder()[1].ActualWord())
-	assert.Equal(t, "JAVA", solution.Ladder()[2].ActualWord())
+	assert.Equal(t, "KATA", solution.Ladder()[0].String())
+	assert.Equal(t, "KAVA", solution.Ladder()[1].String())
+	assert.Equal(t, "JAVA", solution.Ladder()[2].String())
 }
 
 func TestSameWordSolvable(t *testing.T) {
