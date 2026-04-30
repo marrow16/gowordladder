@@ -1,6 +1,7 @@
 package words
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -40,15 +41,17 @@ var expectedMaxSteps = map[int]int{
 
 func TestCanLoadDictionariesFromFactory(t *testing.T) {
 	for k, v := range expectedDictionarySizes {
-		d := NewDictionary(k)
-		assert.Equal(t, v, d.Len())
-		assert.Equal(t, k, d.WordLength())
-		assert.Len(t, d.Words(), v)
-		assert.Equal(t, expectedMaxSteps[k], d.MaxSteps())
-		for i := 3; i <= expectedMaxSteps[k]; i++ {
-			assert.True(t, len(d.WordsWithSteps(i)) > 0)
-		}
-		assert.Len(t, d.WordsWithSteps(expectedMaxSteps[k]+1), 0)
+		t.Run(fmt.Sprintf("%d-letters", k), func(t *testing.T) {
+			d := NewDictionary(k)
+			assert.Equal(t, v, d.Len())
+			assert.Equal(t, k, d.WordLength())
+			assert.Len(t, d.Words(), v)
+			assert.Equal(t, expectedMaxSteps[k], d.MaxSteps())
+			for i := 3; i <= expectedMaxSteps[k]; i++ {
+				assert.True(t, len(d.WordsWithSteps(i)) > 0)
+			}
+			assert.Len(t, d.WordsWithSteps(expectedMaxSteps[k]+1), 0)
+		})
 	}
 }
 

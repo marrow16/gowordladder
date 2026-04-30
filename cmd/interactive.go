@@ -148,7 +148,9 @@ func (i *interactive) setStartWord(input string) bool {
 			println(red(fmt.Sprintf("            Dictionary %d-letters does not have ladders of length %d (max is %d)!", wordLength, ladderLength, i.dictionary.MaxSteps())))
 			return false
 		}
+		start := time.Now()
 		puzzle, err := generator.GeneratePuzzle(wordLength, ladderLength, nil, nil)
+		dur := time.Since(start)
 		if err != nil {
 			println(red(fmt.Sprintf("            %s", err.Error())))
 			return false
@@ -158,8 +160,9 @@ func (i *interactive) setStartWord(input string) bool {
 		i.maximumLadderLength = ladderLength
 		println(green(fmt.Sprintf("                      Random: %s", i.startWord)))
 		i.onStep++
-		println(promptFinalWord + green(i.endWord.String()))
-		println(prompt + "   Ladder length: " + green(strconv.Itoa(ladderLength)))
+		println(promptFinalWord + green(i.endWord))
+		println(prompt + "   Ladder length: " + green(ladderLength))
+		println("Took " + green(dur) + " to generate puzzle (with " + green(len(puzzle.Solutions)) + " solutions, score: " + green(puzzle.MaxScore) + ")")
 		i.onStep++
 		return true
 	}
@@ -236,7 +239,7 @@ func (i *interactive) setMaximumLadderLength(input string) bool {
 }
 
 func (i *interactive) solve() {
-	println("Took " + green(fmt.Sprintf("%s", i.dictionaryLoadTime)) + " to load dictionary")
+	println("Took " + green(i.dictionaryLoadTime) + " to load dictionary")
 	puzzle := solving.NewPuzzle(i.startWord, i.endWord)
 	if i.maximumLadderLength == -1 {
 		start := time.Now()
@@ -246,8 +249,7 @@ func (i *interactive) solve() {
 			println(red("Cannot solve `" + i.startWord.String() + "' to '" + i.endWord.String() + "'!"))
 		}
 		i.maximumLadderLength = minLen
-		println("Took " + green(fmt.Sprintf("%s", dur)) +
-			" to determine minimum ladder length of " + green(fmt.Sprintf("%d", minLen)))
+		println("Took " + green(dur) + " to determine minimum ladder length of " + green(minLen))
 	}
 	solver := solving.NewSolver(puzzle)
 	start := time.Now()
@@ -257,9 +259,9 @@ func (i *interactive) solve() {
 		println(red(fmt.Sprintf("Took %s to find no solutions (explored %d candidates)", dur, solver.ExploredCount())))
 	} else {
 		println(
-			"Took " + green(fmt.Sprintf("%s", dur)) +
-				" to find " + green(fmt.Sprintf("%d", len(solutions))) +
-				" solutions (explored " + green(fmt.Sprintf("%d", solver.ExploredCount())) + " candidates)")
+			"Took " + green(dur) +
+				" to find " + green(len(solutions)) +
+				" solutions (explored " + green(solver.ExploredCount()) + " candidates)")
 		i.displaySolutions(solutions)
 	}
 }
@@ -292,16 +294,38 @@ func (i *interactive) displaySolutions(solutions []*solving.Solution) {
 			}
 		}
 		for s := 0; s < limit && (s+pageStart) < length; s++ {
-			println(fmt.Sprintf("%d/%d", s+pageStart+1, length) + " " + green(solutions[s+pageStart].String()))
+			println(fmt.Sprintf("%d/%d", s+pageStart+1, length) + " " + green(solutions[s+pageStart]))
 		}
 		pageStart = pageStart + limit
 	}
 }
 
-func green(msg string) string {
-	return terminalColourGreen + msg + terminalColourBlack
+func green(msg any) string {
+	switch mt := msg.(type) {
+	case string:
+		return terminalColourGreen + mt + terminalColourBlack
+	case int:
+		return terminalColourGreen + strconv.Itoa(mt) + terminalColourBlack
+	case float64:
+		return terminalColourGreen + strconv.FormatFloat(mt, 'f', -1, 64) + terminalColourBlack
+	case fmt.Stringer:
+		return terminalColourGreen + mt.String() + terminalColourBlack
+	default:
+		return terminalColourGreen + fmt.Sprintf("%v", msg) + terminalColourBlack
+	}
 }
 
-func red(msg string) string {
-	return terminalColourRed + msg + terminalColourBlack
+func red(msg any) string {
+	switch mt := msg.(type) {
+	case string:
+		return terminalColourRed + mt + terminalColourBlack
+	case int:
+		return terminalColourRed + strconv.Itoa(mt) + terminalColourBlack
+	case float64:
+		return terminalColourRed + strconv.FormatFloat(mt, 'f', -1, 64) + terminalColourBlack
+	case fmt.Stringer:
+		return terminalColourRed + mt.String() + terminalColourBlack
+	default:
+		return terminalColourRed + fmt.Sprintf("%v", msg) + terminalColourBlack
+	}
 }

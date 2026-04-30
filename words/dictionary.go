@@ -45,7 +45,7 @@ func (d *Dictionary) load() {
 	}()
 
 	scanner := bufio.NewScanner(file)
-	builder := &wordLinkageBuilder{variations: map[string][]*Word{}}
+	builder := make(variations)
 	for scanner.Scan() {
 		d.addWord(scanner.Text(), builder)
 	}
@@ -80,10 +80,13 @@ func (d *Dictionary) Words() (result []*Word) {
 	return result
 }
 
-func (d *Dictionary) addWord(line string, builder *wordLinkageBuilder) {
+func (d *Dictionary) addWord(line string, builder variations) {
 	if parts := strings.Split(line, "\t"); len(parts) == 2 {
 		actualWord, n := parts[0], parts[1]
-		maxSteps, _ := strconv.Atoi(n)
+		maxSteps, err := strconv.Atoi(n)
+		if err != nil {
+			panic(fmt.Sprintf("invalid word input (max steps): %q", line))
+		}
 		if maxSteps > d.maxSteps {
 			d.maxSteps = maxSteps
 		}
@@ -94,23 +97,23 @@ func (d *Dictionary) addWord(line string, builder *wordLinkageBuilder) {
 				d.wordsBySteps[i] = append(d.wordsBySteps[i], w)
 			}
 			builder.link(w)
+		} else {
+			panic(fmt.Sprintf("invalid word input (word length): %q", line))
 		}
 	} else {
 		panic(fmt.Sprintf("invalid word input: %q", line))
 	}
 }
 
-type wordLinkageBuilder struct {
-	variations map[string][]*Word
-}
+type variations map[string][]*Word
 
-func (b *wordLinkageBuilder) link(word *Word) {
+func (v variations) link(word *Word) {
 	for _, variant := range word.Variations() {
-		for _, link := range b.variations[variant] {
+		for _, link := range v[variant] {
 			link.addLink(word)
 			word.addLink(link)
 		}
-		b.variations[variant] = append(b.variations[variant], word)
+		v[variant] = append(v[variant], word)
 	}
 }
 
