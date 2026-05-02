@@ -30,6 +30,7 @@ func (v *viewSolutions) content(m *model) (string, *tea.Cursor) {
 		topBottom   = "─"
 		bottomLeft  = "╰"
 		bottomRight = "╯"
+		vertical    = "│"
 	)
 	var sb strings.Builder
 	lines := 1
@@ -66,12 +67,12 @@ func (v *viewSolutions) content(m *model) (string, *tea.Cursor) {
 			solution := v.solutions[s+v.offsetX]
 			ladder := solution.Ladder()
 			if row == 0 {
-				sb.WriteString(helpStyle.Render("|"))
+				sb.WriteString(helpStyle.Render(vertical))
 				sb.WriteString(ladder[row].String())
-				sb.WriteString(helpStyle.Render("|"))
+				sb.WriteString(helpStyle.Render(vertical))
 				sb.WriteString(strings.Repeat(" ", v.solutionWidth-v.wordLen-2))
 			} else if row < len(ladder) {
-				sb.WriteString(helpStyle.Render("|"))
+				sb.WriteString(helpStyle.Render(vertical))
 				prev := []rune(ladder[row-1].String())
 				word := []rune(ladder[row].String())
 				for i, r := range word {
@@ -81,7 +82,7 @@ func (v *viewSolutions) content(m *model) (string, *tea.Cursor) {
 						sb.WriteRune(r)
 					}
 				}
-				sb.WriteString(helpStyle.Render("|"))
+				sb.WriteString(helpStyle.Render(vertical))
 				sb.WriteString(strings.Repeat(" ", v.solutionWidth-v.wordLen-2))
 			} else if row == len(ladder) {
 				sb.WriteString(helpStyle.Render(bottomLeft))
