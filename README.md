@@ -2,7 +2,12 @@
 
 GoLang [Word Ladder](https://en.wikipedia.org/wiki/Word_ladder) solver, generator & analysis.
 
-To run interactively:
+Run CLI interactively:
 ```
- go run ./cmd
+go run ./cmd/cli
+```
+
+Run TUI (terminal UI):
+```
+go run ./cmd/tui
 ```

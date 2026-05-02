@@ -44,9 +44,10 @@ func solveNow(args []string) {
 	if i, err := strconv.Atoi(third); err == nil && i > 0 {
 		maxLadderLength = i
 	} else {
-		start := time.Now()
-		maxLadderLength, solvable := puzzle.CalculateMinimumLadderLength()
-		dur := time.Now().Sub(start)
+		var solvable bool
+		start = time.Now()
+		maxLadderLength, solvable = puzzle.CalculateMinimumLadderLength()
+		dur = time.Now().Sub(start)
 		if !solvable {
 			panic(any(fmt.Sprintf("Cannot solve `%s' to '%s'!", first, second)))
 		}
