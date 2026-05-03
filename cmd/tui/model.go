@@ -4,6 +4,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"fmt"
+	"gowordladder/generator"
 	"gowordladder/solving"
 	"gowordladder/words"
 	"log/slog"
@@ -20,6 +21,7 @@ const (
 	solve mode = iota
 	generate
 	solutions
+	play
 )
 
 func (m mode) String() string {
@@ -30,6 +32,8 @@ func (m mode) String() string {
 		return "Generate"
 	case solutions:
 		return "Solutions"
+	case play:
+		return "Play"
 	}
 	return ""
 }
@@ -51,6 +55,7 @@ type model struct {
 	// mode views...
 	viewSolve     view
 	viewGenerate  view
+	viewPlay      playView
 	viewSolutions solutionsView
 	solutionsBack view
 	backMode      mode
@@ -74,6 +79,7 @@ func newModel(withLogging bool) *model {
 		currentView:         initialView,
 		viewSolve:           initialView,
 		viewGenerate:        &viewGenerate{},
+		viewPlay:            &viewPlay{},
 		viewSolutions:       &viewSolutions{},
 	}
 }
@@ -166,6 +172,12 @@ func (m *model) loadDictionary(wordLength int) *words.Dictionary {
 		}
 	}
 	return m.dictionary
+}
+
+func (m *model) play(puzzle generator.Puzzle) {
+	m.viewPlay.start(puzzle, m.loadDictionary(puzzle.WordLength))
+	m.mode = play
+	m.currentView = m.viewPlay
 }
 
 func (m *model) showSolutions(s []*solving.Solution) {

@@ -3,6 +3,7 @@ package main
 import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"strconv"
 	"strings"
 )
 
@@ -76,6 +77,20 @@ func (i *numberInput) key(msg tea.KeyPressMsg) {
 	switch {
 	case k == "backspace" && len(i.current) > 0:
 		i.current = i.current[:len(i.current)-1]
+	case k == "up":
+		if i.current == "" {
+			i.current = "1"
+		} else if n, err := strconv.Atoi(i.current); err == nil {
+			if s := strconv.Itoa(n + 1); len(s) <= i.maxLength {
+				i.current = s
+			}
+		}
+	case k == "down":
+		if n, err := strconv.Atoi(i.current); err == nil && n > 0 {
+			if s := strconv.Itoa(n - 1); len(s) <= i.maxLength {
+				i.current = s
+			}
+		}
 	case len(k) == 1 && k >= "0" && k <= "9":
 		if len(i.current) < i.maxLength {
 			i.current += k

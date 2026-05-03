@@ -166,8 +166,7 @@ func (v *viewGenerate) content(m *model) (string, *tea.Cursor) {
 
 func (v *viewGenerate) help() string {
 	if v.step == generateGenerated {
-		//return "ctrl+n: New  •  ctrl+p: Play  •  enter: Solutions  •  ctrl+s: Solver"
-		return "ctrl+n: New  •  enter: Solutions  •  ctrl+s: Solver"
+		return "ctrl+n: New  •  ctrl+p: Play  •  enter: Solutions  •  ctrl+s: Solver"
 	} else {
 		return "ctrl+n: New  •  ctrl+s: Solver"
 	}
@@ -185,6 +184,10 @@ func (v *viewGenerate) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 		v.endWord = nil
 		v.puzzle = nil
 		v.step = generateWordLength
+	case "ctrl+p":
+		if v.puzzle != nil {
+			m.play(*v.puzzle)
+		}
 	case "enter":
 		switch v.step {
 		case generateWordLength:
@@ -345,7 +348,7 @@ func (v *viewGenerate) enterEndWord(m *model) tea.Cmd {
 			_ = dist
 			start := time.Now()
 			sw := v.startWord.String()
-			puzzle, err := generator.GeneratePuzzle(v.wordLen, v.ladderLen, &sw, nil)
+			puzzle, err := generator.GeneratePuzzle(v.wordLen, v.ladderLen, &sw, &s)
 			dur := time.Since(start)
 			if err != nil {
 				return generateEnterResult{err: err.Error()}
@@ -355,7 +358,6 @@ func (v *viewGenerate) enterEndWord(m *model) tea.Cmd {
 				update: func(v *viewGenerate) {
 					v.currentInput = nil
 					v.puzzle = puzzle
-					//v.ladderLen = dist
 					v.puzzleGenerateTime = dur
 				},
 			}
