@@ -15,8 +15,9 @@ type input interface {
 }
 
 type wordInput struct {
-	maxLength int
-	current   string
+	maxLength        int
+	current          string
+	allowUnderscores bool
 }
 
 func (i *wordInput) render() (string, int) {
@@ -38,7 +39,7 @@ func (i *wordInput) key(msg tea.KeyPressMsg) bool {
 	case k == "backspace" && len(i.current) > 0:
 		i.current = i.current[:len(i.current)-1]
 		return true
-	case len(k) == 1 && k >= "a" && k <= "z":
+	case len(k) == 1 && ((i.allowUnderscores && k == "_") || (k >= "a" && k <= "z")):
 		if len(i.current) < i.maxLength {
 			i.current += strings.ToUpper(k)
 		} else {

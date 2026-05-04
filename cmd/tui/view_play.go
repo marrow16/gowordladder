@@ -288,7 +288,7 @@ func (v *viewPlay) wordLength() int {
 
 func (v *viewPlay) currentWord() string {
 	s := v.entries[v.onStep]
-	if isAllAZ(s) {
+	if len(s) >= 2 && (strings.Count(s, "_") == 1 || isAllAZ(s)) {
 		return s
 	}
 	return ""

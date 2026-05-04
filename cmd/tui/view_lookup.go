@@ -17,11 +17,12 @@ type lookupView interface {
 }
 
 type viewLookup struct {
-	backMode mode
-	backView view
-	offsetY  int
-	input    input
-	result   *lookupResult
+	backMode         mode
+	backView         view
+	offsetY          int
+	input            input
+	lookupResult     *lookupResult
+	variationsResult *variationsResult
 }
 
 func (v *viewLookup) content(m *model) (string, *tea.Cursor) {
@@ -36,24 +37,47 @@ func (v *viewLookup) content(m *model) (string, *tea.Cursor) {
 	csr := tea.NewCursor(cxp+len(prompt), 2)
 	sb.WriteString("\n" + strings.Repeat("─", m.width) + "\n")
 	lines := 4
-	if v.result != nil {
-		if !v.result.inDictionary {
+	if v.variationsResult != nil {
+		if len(v.variationsResult.variations) == 0 {
+			sb.WriteString(" " + errorStyle.Render("No variations found") + "\n")
+			lines++
+		} else {
+			vs := make([]string, len(v.variationsResult.variations))
+			for i, vwd := range v.variationsResult.variations {
+				vs[i] = vwd.String()
+			}
+			const title = " Variations: "
+			vlns := wrap(strings.Join(vs, ", "), m.width-len(title))
+			maxLines := m.height - lines - footerLines
+			for l := 0; l < maxLines && (l+v.offsetY) < len(vlns); l++ {
+				sb.WriteString("\n")
+				if l == 0 {
+					sb.WriteString(title)
+				} else {
+					sb.WriteString(strings.Repeat(" ", len(title)))
+				}
+				sb.WriteString(vlns[l+v.offsetY])
+				lines++
+			}
+		}
+	} else if v.lookupResult != nil {
+		if !v.lookupResult.inDictionary {
 			sb.WriteString(" " + errorStyle.Render("Not in my dictionary") + "\n")
 			lines++
 		}
-		if v.result.apiError != nil {
-			sb.WriteString(errorStyle.Render(" API error: "+v.result.apiError.Error()) + "\n")
+		if v.lookupResult.apiError != nil {
+			sb.WriteString(errorStyle.Render(" API error: "+v.lookupResult.apiError.Error()) + "\n")
 			lines++
-		} else if len(v.result.apiResponse.Entries) == 0 {
+		} else if len(v.lookupResult.apiResponse.Entries) == 0 {
 			sb.WriteString(" " + errorStyle.Render("No meanings found in API dictionary") + "\n")
 			lines++
-			if v.result.inDictionary {
+			if v.lookupResult.inDictionary {
 				sb.WriteString(" " + helpStyle.Render("(but word exists in my dictionary") + "\n")
 				lines++
 			}
 		} else {
 			maxLines := m.height - lines - footerLines
-			showLines := v.result.apiResponse.buildLines(m.width)
+			showLines := v.lookupResult.apiResponse.buildLines(m.width)
 			for l := 0; l < maxLines && (l+v.offsetY) < len(showLines); l++ {
 				sb.WriteString("\n")
 				sb.WriteString(showLines[l+v.offsetY])
@@ -84,7 +108,8 @@ func (v *viewLookup) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 		return v.doLookup()
 	}
 	if v.input.key(msg) {
-		v.result = nil
+		v.lookupResult = nil
+		v.variationsResult = nil
 	}
 	return nil
 }
@@ -95,9 +120,16 @@ type lookupResult struct {
 	apiError     error
 }
 
+type variationsResult struct {
+	variations []*words.Word
+}
+
 func (v *viewLookup) update(m *model, msg tea.Msg) tea.Cmd {
-	if r, ok := msg.(lookupResult); ok {
-		v.result = &r
+	switch mt := msg.(type) {
+	case lookupResult:
+		v.lookupResult = &mt
+	case variationsResult:
+		v.variationsResult = &mt
 	}
 	return nil
 }
@@ -112,26 +144,37 @@ func (v *viewLookup) currentWord() string {
 
 func (v *viewLookup) lookupWord(word string, backMode mode, backView view) tea.Cmd {
 	v.offsetY = 0
-	v.result = nil
+	v.lookupResult = nil
+	v.variationsResult = nil
 	v.backMode = backMode
 	v.backView = backView
-	v.input = &wordInput{maxLength: 15, current: word}
+	v.input = &wordInput{maxLength: 15, current: word, allowUnderscores: true}
 	return v.doLookup()
 }
 
 func (v *viewLookup) doLookup() tea.Cmd {
 	s := v.input.value()
 	if l := len(s); l >= 2 {
-		v.result = nil
+		v.lookupResult = nil
+		v.variationsResult = nil
 		v.offsetY = 0
-		return func() tea.Msg {
-			dict := words.NewDictionary(l)
-			_, found := dict.Word(s)
-			r, err := v.apiLookup()
-			return lookupResult{
-				inDictionary: found,
-				apiResponse:  r,
-				apiError:     err,
+		if strings.ContainsRune(s, '_') {
+			return func() tea.Msg {
+				dict := words.NewDictionary(l)
+				return variationsResult{
+					variations: dict.Variations(s),
+				}
+			}
+		} else {
+			return func() tea.Msg {
+				dict := words.NewDictionary(l)
+				_, found := dict.Word(s)
+				r, err := v.apiLookup()
+				return lookupResult{
+					inDictionary: found,
+					apiResponse:  r,
+					apiError:     err,
+				}
 			}
 		}
 	}

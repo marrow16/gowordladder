@@ -14,6 +14,7 @@ type Dictionary struct {
 	wordLength   int
 	words        map[string]*Word
 	wordsBySteps map[int][]*Word
+	variations   variations
 	maxSteps     int
 }
 
@@ -49,6 +50,7 @@ func (d *Dictionary) load() {
 	for scanner.Scan() {
 		d.addWord(scanner.Text(), builder)
 	}
+	d.variations = builder
 }
 
 func (d *Dictionary) Word(s string) (word *Word, ok bool) {
@@ -78,6 +80,13 @@ func (d *Dictionary) Words() (result []*Word) {
 		result = append(result, w)
 	}
 	return result
+}
+
+func (d *Dictionary) Variations(pattern string) []*Word {
+	if v, ok := d.variations[strings.ToUpper(pattern)]; ok {
+		return slices.Clone(v)
+	}
+	return nil
 }
 
 func (d *Dictionary) addWord(line string, builder variations) {
