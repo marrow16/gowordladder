@@ -168,12 +168,25 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 			v.onStep--
 			v.ensureCursorVisible(m)
 		}
+	case "shift+tab":
+		if !v.solved {
+			v.checkWord()
+			if v.wrong == "" && v.warning == "" && v.onStep > 0 {
+				v.onStep--
+				v.onChar = 0
+				v.ensureCursorVisible(m)
+			}
+		} else if v.onStep < len(v.entries)-1 {
+			v.onStep++
+			v.onChar = 0
+			v.ensureCursorVisible(m)
+		}
 	case "down":
 		if v.onStep < len(v.entries)-1 {
 			v.onStep++
 			v.ensureCursorVisible(m)
 		}
-	case "enter":
+	case "enter", "tab":
 		if !v.solved {
 			v.checkWord()
 			if v.wrong == "" && v.warning == "" && v.onStep < len(v.entries)-1 {

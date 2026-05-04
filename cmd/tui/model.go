@@ -53,6 +53,7 @@ type view interface {
 
 type model struct {
 	logger      *slog.Logger
+	prefs       *prefs
 	mode        mode
 	width       int
 	height      int
@@ -75,17 +76,26 @@ func newModel(withLogging bool) *model {
 			l = slog.New(slog.NewJSONHandler(lf, &slog.HandlerOptions{Level: slog.LevelInfo}))
 		}
 	}
-	initialView := &viewSolve{}
+	p := newPrefs()
+	pv := &viewPlay{}
+	var initialView view = pv
+	gv := &viewGenerate{}
+	if puzzle, err := generator.GeneratePuzzle(p.WordLength, p.LadderLength, nil, nil); err == nil {
+		pv.start(*puzzle, words.NewDictionary(puzzle.WordLength))
+	} else {
+		initialView = gv
+	}
 	return &model{
-		dictionaryLoadTimes: map[int]time.Duration{},
 		logger:              l,
+		prefs:               p,
 		mode:                solve,
 		currentView:         initialView,
-		viewSolve:           initialView,
-		viewGenerate:        &viewGenerate{},
-		viewPlay:            &viewPlay{},
+		viewSolve:           &viewSolve{},
+		viewGenerate:        gv,
+		viewPlay:            pv,
 		viewSolutions:       &viewSolutions{},
 		viewLookup:          &viewLookup{},
+		dictionaryLoadTimes: map[int]time.Duration{},
 	}
 }
 
@@ -188,6 +198,9 @@ func (m *model) loadDictionary(wordLength int) *words.Dictionary {
 }
 
 func (m *model) play(puzzle generator.Puzzle) {
+	m.prefs.WordLength = puzzle.WordLength
+	m.prefs.LadderLength = puzzle.LadderLength
+	m.prefs.save()
 	m.viewPlay.start(puzzle, m.loadDictionary(puzzle.WordLength))
 	m.mode = play
 	m.currentView = m.viewPlay
