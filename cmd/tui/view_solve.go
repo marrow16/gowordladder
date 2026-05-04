@@ -3,6 +3,7 @@ package main
 import (
 	tea "charm.land/bubbletea/v2"
 	"fmt"
+	"gowordladder/generator"
 	"gowordladder/solving"
 	"gowordladder/words"
 	"strconv"
@@ -42,12 +43,20 @@ func (v *viewSolve) wordLength() int {
 	return 0
 }
 
+func (v *viewSolve) currentWord() string {
+	if (v.step == solveStartWord || v.step == solveEndWord) && v.currentInput != nil {
+		return v.currentInput.value()
+	}
+	return ""
+}
+
 func (v *viewSolve) content(m *model) (string, *tea.Cursor) {
 	const (
 		promptStartWord = "            Start word: "
 		promptEndWord   = "              End word: "
 		promptMaxLadder = " Maximum ladder length: "
 		promptLen       = len(promptMaxLadder)
+		footerLines     = 3
 	)
 	var sb strings.Builder
 	sb.WriteString("\n")
@@ -78,7 +87,7 @@ func (v *viewSolve) content(m *model) (string, *tea.Cursor) {
 		if v.currentError != "" {
 			sb.WriteString(errorStyle.Render("  " + v.currentError))
 		} else {
-			sb.WriteString(helpStyle.Render("  (blank for random word)"))
+			sb.WriteString(helpStyle.Render("  (blank or '?' for random)"))
 		}
 		lines += 2
 	case solveMaxLadder:
@@ -119,9 +128,7 @@ func (v *viewSolve) content(m *model) (string, *tea.Cursor) {
 		lines++
 	}
 
-	if m.height-lines-2 > 0 {
-		sb.WriteString(strings.Repeat("\n", m.height-lines-2))
-	}
+	sb.WriteString(padLines(m.height - lines - footerLines))
 	var csr *tea.Cursor
 	if cpx > -1 {
 		csr = tea.NewCursor(promptLen+cpx, lines)
@@ -131,9 +138,9 @@ func (v *viewSolve) content(m *model) (string, *tea.Cursor) {
 
 func (v *viewSolve) help() string {
 	if v.step == solveSolved && len(v.solutions) > 0 {
-		return "ctrl+n: New  •  enter: Solutions  •  ctrl+g: Generate"
+		return "ctrl+p: Play  •  enter: Solutions\nctrl+n: New  •  ctrl+g: Generate"
 	} else {
-		return "ctrl+n: New  •  ctrl+g: Generate"
+		return "\nctrl+n: New  •  ctrl+g: Generate"
 	}
 }
 
@@ -147,6 +154,14 @@ func (v *viewSolve) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 		v.startWord = nil
 		v.endWord = nil
 		v.step = solveStartWord
+	case "ctrl+p":
+		if v.step == solveSolved && len(v.solutions) > 0 {
+			sw, ew := v.startWord.String(), v.endWord.String()
+			ll := len(v.solutions[0].Ladder())
+			if puzzle, err := generator.GeneratePuzzle(len(sw), ll, &sw, &ew); err == nil {
+				m.play(*puzzle)
+			}
+		}
 	case "enter":
 		switch v.step {
 		case solveStartWord:
@@ -160,6 +175,11 @@ func (v *viewSolve) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 				m.showSolutions(v.solutions)
 				return nil
 			}
+		}
+	case "?":
+		if v.step == solveEndWord && v.currentInput != nil {
+			v.currentInput.set("")
+			return v.enterEndWord(m)
 		}
 	}
 	if v.currentInput != nil {

@@ -9,7 +9,7 @@ import (
 
 type input interface {
 	render() (string, int)
-	key(msg tea.KeyPressMsg)
+	key(msg tea.KeyPressMsg) bool
 	value() string
 	set(val string)
 }
@@ -32,18 +32,21 @@ func (i *wordInput) render() (string, int) {
 	return inputStyle.Render(i.current + pad), cp
 }
 
-func (i *wordInput) key(msg tea.KeyPressMsg) {
+func (i *wordInput) key(msg tea.KeyPressMsg) bool {
 	k := strings.ToLower(msg.String())
 	switch {
 	case k == "backspace" && len(i.current) > 0:
 		i.current = i.current[:len(i.current)-1]
+		return true
 	case len(k) == 1 && k >= "a" && k <= "z":
 		if len(i.current) < i.maxLength {
 			i.current += strings.ToUpper(k)
 		} else {
 			i.current = i.current[:len(i.current)-1] + strings.ToUpper(k)
 		}
+		return true
 	}
+	return false
 }
 
 func (i *wordInput) value() string {
@@ -72,23 +75,27 @@ func (i *numberInput) render() (string, int) {
 	return inputStyle.Render(i.current + pad), cp
 }
 
-func (i *numberInput) key(msg tea.KeyPressMsg) {
+func (i *numberInput) key(msg tea.KeyPressMsg) bool {
 	k := msg.String()
 	switch {
 	case k == "backspace" && len(i.current) > 0:
 		i.current = i.current[:len(i.current)-1]
+		return true
 	case k == "up":
 		if i.current == "" {
 			i.current = "1"
+			return true
 		} else if n, err := strconv.Atoi(i.current); err == nil {
 			if s := strconv.Itoa(n + 1); len(s) <= i.maxLength {
 				i.current = s
+				return true
 			}
 		}
 	case k == "down":
 		if n, err := strconv.Atoi(i.current); err == nil && n > 0 {
 			if s := strconv.Itoa(n - 1); len(s) <= i.maxLength {
 				i.current = s
+				return true
 			}
 		}
 	case len(k) == 1 && k >= "0" && k <= "9":
@@ -97,7 +104,9 @@ func (i *numberInput) key(msg tea.KeyPressMsg) {
 		} else {
 			i.current = i.current[:len(i.current)-1] + k
 		}
+		return true
 	}
+	return false
 }
 
 func (i *numberInput) value() string {

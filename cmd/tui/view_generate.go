@@ -41,6 +41,13 @@ func (v *viewGenerate) wordLength() int {
 	return 0
 }
 
+func (v *viewGenerate) currentWord() string {
+	if (v.step == generateStartWord || v.step == generateEndWord) && v.currentInput != nil {
+		return v.currentInput.value()
+	}
+	return ""
+}
+
 func (v *viewGenerate) content(m *model) (string, *tea.Cursor) {
 	const (
 		promptWordLength   = "   Word length: "
@@ -48,6 +55,7 @@ func (v *viewGenerate) content(m *model) (string, *tea.Cursor) {
 		promptStartWord    = "    Start word: "
 		promptEndWord      = "      End word: "
 		promptLen          = len(promptEndWord)
+		footerLines        = 3
 	)
 	var sb strings.Builder
 	sb.WriteString("\n")
@@ -58,12 +66,14 @@ func (v *viewGenerate) content(m *model) (string, *tea.Cursor) {
 	case generateWordLength:
 		sb.WriteString(promptWordLength)
 		if v.currentInput == nil {
-			v.currentInput = &numberInput{maxLength: 2}
+			v.currentInput = &numberInput{maxLength: 2, current: "2"}
 		}
 		s, cpx = v.currentInput.render()
 		sb.WriteString(s)
 		if v.currentError != "" {
 			sb.WriteString(errorStyle.Render("  " + v.currentError))
+		} else {
+			sb.WriteString(helpStyle.Render("  (enter a number 2-15)"))
 		}
 		lines++
 	case generateLadderLength:
@@ -154,9 +164,7 @@ func (v *viewGenerate) content(m *model) (string, *tea.Cursor) {
 		}
 	}
 
-	if m.height-lines-2 > 0 {
-		sb.WriteString(strings.Repeat("\n", m.height-lines-2))
-	}
+	sb.WriteString(padLines(m.height - lines - footerLines))
 	var csr *tea.Cursor
 	if cpx > -1 {
 		csr = tea.NewCursor(promptLen+cpx, lines)
@@ -166,9 +174,9 @@ func (v *viewGenerate) content(m *model) (string, *tea.Cursor) {
 
 func (v *viewGenerate) help() string {
 	if v.step == generateGenerated {
-		return "ctrl+n: New  •  ctrl+p: Play  •  enter: Solutions  •  ctrl+s: Solver"
+		return "ctrl+p: Play  •  enter: Solutions\nctrl+n: New  •  ctrl+s: Solver"
 	} else {
-		return "ctrl+n: New  •  ctrl+s: Solver"
+		return "\nctrl+n: New  •  ctrl+s: Solver"
 	}
 }
 

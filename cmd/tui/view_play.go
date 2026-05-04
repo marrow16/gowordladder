@@ -32,6 +32,11 @@ type viewPlay struct {
 	solved         bool
 }
 
+const (
+	headerLines = 2
+	footerLines = 3
+)
+
 func (v *viewPlay) content(m *model) (string, *tea.Cursor) {
 	const (
 		topLeft     = "╭"
@@ -42,27 +47,12 @@ func (v *viewPlay) content(m *model) (string, *tea.Cursor) {
 		vertical    = "│"
 	)
 	var sb strings.Builder
-	sols := fmt.Sprintf(" Solutions: %d ", len(v.puzzle.Solutions))
-	currScore := fmt.Sprintf(" Current score: %.0f ", v.currentScore)
-	maxScore := fmt.Sprintf(" Maximum score: %.0f ", v.puzzle.MaxScore)
-	midPadL := ""
-	midPadR := ""
-	if p := (m.width / 2) - (len(currScore) / 2) - len(sols); p > 0 {
-		midPadL = strings.Repeat(" ", p)
-	}
-	if p := (m.width / 2) - (len(currScore) / 2) - len(maxScore); p > 0 {
-		midPadR = strings.Repeat(" ", p)
-	}
-	if len(sols)+len(midPadL)+len(currScore)+len(midPadR)+len(maxScore) < m.width {
-		midPadR += " "
-	}
-	sb.WriteString(headerStyle.Render(sols + midPadL + currScore + midPadR + maxScore))
-	lines := 2
+	sb.WriteString(v.fitHeader(m))
+	lines := headerLines
 
 	var csr *tea.Cursor
-	maxLines := m.height - lines - 3
-	ladderWd := v.puzzle.WordLength + 2
-	padL := strings.Repeat(" ", ((m.width-ladderWd)/2)-3)
+	maxLines := m.height - lines - footerLines
+	padL := strings.Repeat(" ", ((m.width-v.puzzle.WordLength+2)/2)-3)
 	stop := false
 	for l := 0; !stop && l < maxLines; l++ {
 		sb.WriteString("\n")
@@ -109,10 +99,29 @@ func (v *viewPlay) content(m *model) (string, *tea.Cursor) {
 		}
 	}
 
-	if m.height-lines-2 > 0 {
-		sb.WriteString(strings.Repeat("\n", m.height-lines-2))
-	}
+	sb.WriteString(padLines(m.height - lines - headerLines))
 	return sb.String(), csr
+}
+
+func (v *viewPlay) fitHeader(m *model) string {
+	solsS := fmt.Sprintf(" Solutions: %d", len(v.puzzle.Solutions))
+	currS := fmt.Sprintf("Current score: %.0f", v.currentScore)
+	maxS := fmt.Sprintf("Max score: %.0f ", v.puzzle.MaxScore)
+	solsLen, currLen, maxLen := len(solsS), len(currS), len(maxS)
+	midPadL := " "
+	midPadR := " "
+	halfWd := m.width / 2
+	halfScWd := currLen / 2
+	if p := halfWd - halfScWd - solsLen; p > 0 {
+		midPadL = strings.Repeat(" ", p)
+	}
+	if p := halfWd - (currLen - halfScWd) - maxLen; p > 0 {
+		midPadR = strings.Repeat(" ", p)
+	}
+	if solsLen+len(midPadL)+currLen+len(midPadR)+maxLen < m.width {
+		midPadR += " "
+	}
+	return headerStyle.Render(solsS + midPadL + currS + midPadR + maxS)
 }
 
 func (v *viewPlay) help() string {
@@ -236,10 +245,6 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 }
 
 func (v *viewPlay) ensureCursorVisible(m *model) {
-	const (
-		headerLines = 2
-		footerLines = 3
-	)
 	maxLines := m.height - headerLines - footerLines
 	visibleL := v.onStep - v.offsetY + headerLines
 	if visibleL < 0 {
@@ -279,6 +284,14 @@ func (v *viewPlay) update(m *model, msg tea.Msg) tea.Cmd {
 
 func (v *viewPlay) wordLength() int {
 	return v.puzzle.WordLength
+}
+
+func (v *viewPlay) currentWord() string {
+	s := v.entries[v.onStep]
+	if isAllAZ(s) {
+		return s
+	}
+	return ""
 }
 
 func (v *viewPlay) checkWord() {

@@ -13,10 +13,12 @@ import (
 
 type solutionsView interface {
 	view
-	setSolutions(solutions []*solving.Solution)
+	setSolutions(solutions []*solving.Solution, backMode mode, backView view)
 }
 
 type viewSolutions struct {
+	backMode         mode
+	backView         view
 	offsetX, offsetY int
 	wordLen          int
 	maxLadderLen     int
@@ -34,6 +36,7 @@ func (v *viewSolutions) content(m *model) (string, *tea.Cursor) {
 		bottomLeft  = "╰"
 		bottomRight = "╯"
 		vertical    = "│"
+		footerLines = 2
 	)
 	var sb strings.Builder
 	lines := 1
@@ -56,7 +59,7 @@ func (v *viewSolutions) content(m *model) (string, *tea.Cursor) {
 				sb.WriteString(helpStyle.Render(hdr))
 			}
 		}
-		maxLines := m.height - lines - 2
+		maxLines := m.height - lines - footerLines
 		for l := 0; l < maxLines && (l+v.offsetY) <= v.maxLadderLen; l++ {
 			sb.WriteString("\n")
 			row := l + v.offsetY
@@ -98,7 +101,6 @@ func (v *viewSolutions) content(m *model) (string, *tea.Cursor) {
 			}
 		}
 	} else {
-		const barWidth = 20
 		sb.WriteString(fmt.Sprintf(" Analysis of distinct words over %d solutions", len(v.solutions)))
 		lines++
 		maxCount := 1
@@ -109,7 +111,7 @@ func (v *viewSolutions) content(m *model) (string, *tea.Cursor) {
 		}
 		maxDigits := len(strconv.Itoa(maxCount)) + 1
 		maxFmt := fmt.Sprintf("%%%dd ", maxDigits)
-		maxLines := m.height - lines - 2
+		maxLines := m.height - lines - footerLines
 		for l := 0; l < maxLines && (l+v.offsetY) < v.maxLadderLen; l++ {
 			row := l + v.offsetY
 			sb.WriteString("\n")
@@ -117,30 +119,31 @@ func (v *viewSolutions) content(m *model) (string, *tea.Cursor) {
 			sb.WriteString(helpStyle.Render(fmt.Sprintf("%2d: ", row+1)))
 			count := len(v.analysis[row])
 			sb.WriteString(fmt.Sprintf(maxFmt, count))
+			const barWidth = 20
 			sb.WriteString(helpStyle.Render(strings.Repeat("█", (count*barWidth)/maxCount)))
 		}
 	}
-	sb.WriteString(strings.Repeat("\n", m.height-lines-1))
+	sb.WriteString(padLines(m.height - lines - 1))
 	return sb.String(), nil
 }
 
 func (v *viewSolutions) help() string {
 	if v.showingAnalysis {
-		return "↑/↓: Scroll  •  backspace: Back"
+		return "↑/↓: Scroll  •  ctrl+b: Back"
 	} else if len(v.solutions) > 1 {
-		return "←/→: Solutions  •  ↑/↓: Scroll  •  backspace: Back  •  ctrl+a: Analyse"
+		return "←/→: Solutions  •  ↑/↓: Scroll  •  ctrl+b: Back  •  ctrl+a: Analyse"
 	} else {
-		return "←/→: Solutions  •  ↑/↓: Scroll  •  backspace: Back"
+		return "←/→: Solutions  •  ↑/↓: Scroll  •  ctrl+b: Back"
 	}
 }
 
 func (v *viewSolutions) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
-	case "backspace":
+	case "ctrl+b", "backspace":
 		if v.showingAnalysis {
 			v.showingAnalysis = false
 		} else {
-			m.back()
+			m.restoreView(v.backMode, v.backView)
 		}
 	case "ctrl+a":
 		if !v.showingAnalysis && len(v.solutions) > 1 {
@@ -251,6 +254,10 @@ func (v *viewSolutions) wordLength() int {
 	return v.wordLen
 }
 
+func (v *viewSolutions) currentWord() string {
+	return v.solutions[v.offsetX].Ladder()[0].String()
+}
+
 func (v *viewSolutions) calculateSolutionWidth() int {
 	width := v.wordLen + 6
 	l := len(v.solutions)
@@ -261,7 +268,9 @@ func (v *viewSolutions) calculateSolutionWidth() int {
 	return width
 }
 
-func (v *viewSolutions) setSolutions(solutions []*solving.Solution) {
+func (v *viewSolutions) setSolutions(solutions []*solving.Solution, backMode mode, backView view) {
+	v.backMode = backMode
+	v.backView = backView
 	v.solutions = solutions
 	v.solutionWidth = v.calculateSolutionWidth()
 	sortSolutions(v.solutions)

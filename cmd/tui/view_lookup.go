@@ -1,0 +1,232 @@
+package main
+
+import (
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"encoding/json"
+	"fmt"
+	"gowordladder/words"
+	"net/http"
+	"strconv"
+	"strings"
+)
+
+type lookupView interface {
+	view
+	lookupWord(word string, backMode mode, backView view) tea.Cmd
+}
+
+type viewLookup struct {
+	backMode mode
+	backView view
+	offsetY  int
+	input    input
+	result   *lookupResult
+}
+
+func (v *viewLookup) content(m *model) (string, *tea.Cursor) {
+	const (
+		prompt      = " Word: "
+		footerLines = 2
+	)
+	var sb strings.Builder
+	sb.WriteString("\n" + prompt)
+	s, cxp := v.input.render()
+	sb.WriteString(s)
+	csr := tea.NewCursor(cxp+len(prompt), 2)
+	sb.WriteString("\n" + strings.Repeat("─", m.width) + "\n")
+	lines := 4
+	if v.result != nil {
+		if !v.result.inDictionary {
+			sb.WriteString(" " + errorStyle.Render("Not in my dictionary") + "\n")
+			lines++
+		}
+		if v.result.apiError != nil {
+			sb.WriteString(errorStyle.Render(" API error: "+v.result.apiError.Error()) + "\n")
+			lines++
+		} else if len(v.result.apiResponse.Entries) == 0 {
+			sb.WriteString(" " + errorStyle.Render("No meanings found in API dictionary") + "\n")
+			lines++
+			if v.result.inDictionary {
+				sb.WriteString(" " + helpStyle.Render("(but word exists in my dictionary") + "\n")
+				lines++
+			}
+		} else {
+			maxLines := m.height - lines - footerLines
+			showLines := v.result.apiResponse.buildLines(m.width)
+			for l := 0; l < maxLines && (l+v.offsetY) < len(showLines); l++ {
+				sb.WriteString("\n")
+				sb.WriteString(showLines[l+v.offsetY])
+				lines++
+			}
+		}
+	}
+	sb.WriteString(padLines(m.height - lines - footerLines))
+	return sb.String(), csr
+}
+
+func (v *viewLookup) help() string {
+	return "enter: Lookup  •  ctrl+b: Back"
+}
+
+func (v *viewLookup) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
+	switch msg.String() {
+	case "ctrl+b":
+		m.restoreView(v.backMode, v.backView)
+		return nil
+	case "up":
+		if v.offsetY > 0 {
+			v.offsetY--
+		}
+	case "down":
+		v.offsetY++
+	case "enter":
+		return v.doLookup()
+	}
+	if v.input.key(msg) {
+		v.result = nil
+	}
+	return nil
+}
+
+type lookupResult struct {
+	inDictionary bool
+	apiResponse  *dictionaryResponse
+	apiError     error
+}
+
+func (v *viewLookup) update(m *model, msg tea.Msg) tea.Cmd {
+	if r, ok := msg.(lookupResult); ok {
+		v.result = &r
+	}
+	return nil
+}
+
+func (v *viewLookup) wordLength() int {
+	return 0
+}
+
+func (v *viewLookup) currentWord() string {
+	return ""
+}
+
+func (v *viewLookup) lookupWord(word string, backMode mode, backView view) tea.Cmd {
+	v.offsetY = 0
+	v.result = nil
+	v.backMode = backMode
+	v.backView = backView
+	v.input = &wordInput{maxLength: 15, current: word}
+	return v.doLookup()
+}
+
+func (v *viewLookup) doLookup() tea.Cmd {
+	s := v.input.value()
+	if l := len(s); l >= 2 {
+		v.result = nil
+		v.offsetY = 0
+		return func() tea.Msg {
+			dict := words.NewDictionary(l)
+			_, found := dict.Word(s)
+			r, err := v.apiLookup()
+			return lookupResult{
+				inDictionary: found,
+				apiResponse:  r,
+				apiError:     err,
+			}
+		}
+	}
+	return nil
+}
+
+func (v *viewLookup) apiLookup() (result *dictionaryResponse, err error) {
+	const dictionaryUrl = "https://freedictionaryapi.com/api/v1/entries/en/"
+	var req *http.Request
+	if req, err = http.NewRequest("GET", dictionaryUrl+strings.ToLower(v.input.value()), nil); err == nil {
+		var resp *http.Response
+		if resp, err = http.DefaultClient.Do(req); err == nil {
+			defer resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				result = &dictionaryResponse{}
+				if err = json.NewDecoder(resp.Body).Decode(result); err == nil {
+					result.normalize()
+				}
+			} else {
+				err = fmt.Errorf("unexpected response status: %d", resp.Status)
+			}
+		}
+	}
+	return result, err
+}
+
+type dictionaryResponse struct {
+	Entries []dictionaryEntry `json:"entries"`
+}
+type dictionaryEntry struct {
+	PartOfSpeech string `json:"partOfSpeech"`
+	Senses       []struct {
+		Definition string `json:"definition"`
+	} `json:"senses"`
+}
+
+func (r *dictionaryResponse) normalize() {
+	parts := map[string]int{}
+	newEntries := make([]dictionaryEntry, 0, len(r.Entries))
+	for _, entry := range r.Entries {
+		if idx, found := parts[entry.PartOfSpeech]; found {
+			newEntries[idx].Senses = append(newEntries[idx].Senses, entry.Senses...)
+		} else {
+			parts[entry.PartOfSpeech] = len(newEntries)
+			newEntries = append(newEntries, entry)
+		}
+	}
+	r.Entries = newEntries
+}
+
+var boldStyle = lipgloss.NewStyle().Bold(true)
+
+func (r *dictionaryResponse) buildLines(width int) []string {
+	result := make([]string, 0)
+	for _, entry := range r.Entries {
+		result = append(result, boldStyle.Render(" • "+entry.PartOfSpeech))
+		maxNWd := len(strconv.Itoa(len(entry.Senses) + 1))
+		numFmt := "   %" + strconv.Itoa(maxNWd) + "d. "
+		pad := strings.Repeat(" ", 3+maxNWd+2)
+		for i, sense := range entry.Senses {
+			num := fmt.Sprintf(numFmt, i+1)
+			wrapped := wrap(sense.Definition, width-len(num))
+			for w, s := range wrapped {
+				if w == 0 {
+					result = append(result, num+s)
+				} else {
+					result = append(result, pad+s)
+				}
+			}
+		}
+	}
+	return result
+}
+
+func wrap(text string, maxWidth int) []string {
+	if len(text) <= maxWidth {
+		return []string{text}
+	}
+	wds := strings.Fields(text)
+	var lines []string
+	var current string
+	for _, w := range wds {
+		if current == "" {
+			current = w
+			continue
+		}
+		if len(current)+1+len(w) <= maxWidth {
+			current += " " + w
+		} else {
+			lines = append(lines, current)
+			current = w
+		}
+	}
+	if current != "" {
+		lines = append(lines, current)
+	}
+	return lines
+}

@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"math/rand"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -22,6 +23,7 @@ const (
 	generate
 	solutions
 	play
+	lookup
 )
 
 func (m mode) String() string {
@@ -34,6 +36,8 @@ func (m mode) String() string {
 		return "Solutions"
 	case play:
 		return "Play"
+	case lookup:
+		return "Lookup Word"
 	}
 	return ""
 }
@@ -44,6 +48,7 @@ type view interface {
 	key(m *model, msg tea.KeyPressMsg) tea.Cmd
 	update(m *model, msg tea.Msg) tea.Cmd
 	wordLength() int
+	currentWord() string
 }
 
 type model struct {
@@ -57,8 +62,7 @@ type model struct {
 	viewGenerate  view
 	viewPlay      playView
 	viewSolutions solutionsView
-	solutionsBack view
-	backMode      mode
+	viewLookup    lookupView
 
 	dictionary          *words.Dictionary
 	dictionaryLoadTimes map[int]time.Duration
@@ -81,6 +85,7 @@ func newModel(withLogging bool) *model {
 		viewGenerate:        &viewGenerate{},
 		viewPlay:            &viewPlay{},
 		viewSolutions:       &viewSolutions{},
+		viewLookup:          &viewLookup{},
 	}
 }
 
@@ -106,6 +111,14 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch mt.String() {
 		case "ctrl+c", "esc":
 			return m, tea.Quit
+		case "ctrl+w":
+			if m.mode != lookup {
+				cw := m.currentView.currentWord()
+				cmd := m.viewLookup.lookupWord(cw, m.mode, m.currentView)
+				m.mode = lookup
+				m.currentView = m.viewLookup
+				return m, cmd
+			}
 		default:
 			if !m.viewSwitch(mt.String()) {
 				return m, m.currentView.key(m, mt)
@@ -181,19 +194,21 @@ func (m *model) play(puzzle generator.Puzzle) {
 }
 
 func (m *model) showSolutions(s []*solving.Solution) {
-	m.solutionsBack = m.currentView
-	m.backMode = m.mode
+	m.viewSolutions.setSolutions(s, m.mode, m.currentView)
 	m.mode = solutions
-	m.viewSolutions.setSolutions(s)
 	m.currentView = m.viewSolutions
 }
 
-func (m *model) back() {
-	if m.solutionsBack != nil {
-		m.mode = m.backMode
-		m.currentView = m.solutionsBack
-		m.solutionsBack = nil
+func (m *model) restoreView(rm mode, rv view) {
+	m.currentView = rv
+	m.mode = rm
+}
+
+func padLines(lines int) string {
+	if lines > 0 {
+		return strings.Repeat("\n", lines)
 	}
+	return ""
 }
 
 var (
