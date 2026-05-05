@@ -83,16 +83,18 @@ func newModel(withLogging bool) *model {
 	p := newPrefs()
 	pv := &viewPlay{}
 	var initialView view = pv
+	initialMode := play
 	gv := &viewGenerate{}
 	if puzzle, err := generator.GeneratePuzzle(p.WordLength, p.LadderLength, nil, nil); err == nil {
 		pv.start(*puzzle, words.NewDictionary(puzzle.WordLength))
 	} else {
 		initialView = gv
+		initialMode = generate
 	}
 	return &model{
 		logger:              l,
 		prefs:               p,
-		mode:                solve,
+		mode:                initialMode,
 		currentView:         initialView,
 		viewSolve:           &viewSolve{},
 		viewGenerate:        gv,
