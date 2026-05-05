@@ -83,7 +83,9 @@ func (v *viewScores) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 			v.offsetY -= 2
 		}
 	case "down":
-		v.offsetY += 2
+		if (v.offsetY / 2) < len(m.prefs.HighScores)-1 {
+			v.offsetY += 2
+		}
 	}
 	return nil
 }
