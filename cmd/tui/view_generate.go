@@ -66,7 +66,7 @@ func (v *viewGenerate) content(m *model) (string, *tea.Cursor) {
 	case generateWordLength:
 		sb.WriteString(promptWordLength)
 		if v.currentInput == nil {
-			v.currentInput = &numberInput{maxLength: 2, current: "2"}
+			v.currentInput = &numberInput{maxLength: 2, current: strconv.Itoa(m.prefs.WordLength)}
 		}
 		s, cpx = v.currentInput.render()
 		sb.WriteString(s)

@@ -24,6 +24,7 @@ const (
 	solutions
 	play
 	lookup
+	highs
 )
 
 func (m mode) String() string {
@@ -38,6 +39,8 @@ func (m mode) String() string {
 		return "Play"
 	case lookup:
 		return "Lookup Word"
+	case highs:
+		return "High Scores"
 	}
 	return ""
 }
@@ -64,6 +67,7 @@ type model struct {
 	viewPlay      playView
 	viewSolutions solutionsView
 	viewLookup    lookupView
+	viewScores    scoresView
 
 	dictionary          *words.Dictionary
 	dictionaryLoadTimes map[int]time.Duration
@@ -95,6 +99,7 @@ func newModel(withLogging bool) *model {
 		viewPlay:            pv,
 		viewSolutions:       &viewSolutions{},
 		viewLookup:          &viewLookup{},
+		viewScores:          &viewScores{},
 		dictionaryLoadTimes: map[int]time.Duration{},
 	}
 }
@@ -128,6 +133,12 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.mode = lookup
 				m.currentView = m.viewLookup
 				return m, cmd
+			}
+		case "ctrl+t":
+			if m.mode != highs {
+				m.viewScores.show(m.mode, m.currentView)
+				m.mode = highs
+				m.currentView = m.viewScores
 			}
 		default:
 			if !m.viewSwitch(mt.String()) {
@@ -204,6 +215,16 @@ func (m *model) play(puzzle generator.Puzzle) {
 	m.viewPlay.start(puzzle, m.loadDictionary(puzzle.WordLength))
 	m.mode = play
 	m.currentView = m.viewPlay
+}
+
+func (m *model) playScore(score float64, p generator.Puzzle) {
+	if score > 0 {
+		m.prefs.addScore(score, p.MaxScore, p.WordLength, p.LadderLength, p.StartWord.String(), p.EndWord.String())
+	}
+}
+
+func (m *model) clearScores() {
+	m.prefs.clearScores()
 }
 
 func (m *model) showSolutions(s []*solving.Solution) {

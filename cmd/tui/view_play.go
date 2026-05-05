@@ -170,7 +170,7 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 		}
 	case "shift+tab":
 		if !v.solved {
-			v.checkWord()
+			v.checkWord(m)
 			if v.wrong == "" && v.warning == "" && v.onStep > 0 {
 				v.onStep--
 				v.onChar = 0
@@ -188,7 +188,7 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 		}
 	case "enter", "tab":
 		if !v.solved {
-			v.checkWord()
+			v.checkWord(m)
 			if v.wrong == "" && v.warning == "" && v.onStep < len(v.entries)-1 {
 				v.onChar = 0
 				v.onStep++
@@ -234,7 +234,7 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	case "ctrl+f":
 		if !v.solved {
 			delete(v.okWords, v.onStep)
-			v.fillWord()
+			v.fillWord(m)
 		}
 	case "?":
 		if !v.solved {
@@ -250,7 +250,7 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 				if v.onChar < v.puzzle.WordLength-1 {
 					v.onChar++
 				}
-				v.checkWord()
+				v.checkWord(m)
 			}
 		}
 	}
@@ -307,7 +307,7 @@ func (v *viewPlay) currentWord() string {
 	return ""
 }
 
-func (v *viewPlay) checkWord() {
+func (v *viewPlay) checkWord(m *model) {
 	s := v.entries[v.onStep]
 	if isAllAZ(s) {
 		wd, ok := v.dictionary.Word(s)
@@ -365,6 +365,7 @@ func (v *viewPlay) checkWord() {
 				}
 				if count == expectCount {
 					v.solved = true
+					m.playScore(v.currentScore, v.puzzle)
 					return
 				}
 			}
@@ -406,7 +407,7 @@ func isAllAZ(s string) bool {
 	return true
 }
 
-func (v *viewPlay) fillWord() {
+func (v *viewPlay) fillWord(m *model) {
 	prevWord := v.previousWord(true)
 	nextWord := v.nextWord(true)
 	switch {
@@ -414,7 +415,7 @@ func (v *viewPlay) fillWord() {
 		wd := v.puzzle.Solutions[0].Ladder()[v.onStep+1]
 		v.entries[v.onStep] = wd.String()
 		v.onChar = 0
-		v.checkWord()
+		v.checkWord(m)
 	case prevWord != nil && nextWord != nil:
 		var wd *words.Word
 		for _, solution := range v.puzzle.Solutions {
@@ -426,7 +427,7 @@ func (v *viewPlay) fillWord() {
 		if wd != nil {
 			v.entries[v.onStep] = wd.String()
 			v.onChar = 0
-			v.checkWord()
+			v.checkWord(m)
 		} else {
 			v.warning = "Sorry, no words fit here (mistake above/below?)"
 			return
@@ -442,7 +443,7 @@ func (v *viewPlay) fillWord() {
 		if wd != nil {
 			v.entries[v.onStep] = wd.String()
 			v.onChar = 0
-			v.checkWord()
+			v.checkWord(m)
 		} else {
 			v.warning = "Sorry, no words fit here (mistake above?)"
 			return
@@ -458,7 +459,7 @@ func (v *viewPlay) fillWord() {
 		if wd != nil {
 			v.entries[v.onStep] = wd.String()
 			v.onChar = 0
-			v.checkWord()
+			v.checkWord(m)
 		} else {
 			v.warning = "Sorry, no words fit here (mistake below?)"
 			return
