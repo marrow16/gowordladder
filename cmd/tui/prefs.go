@@ -12,6 +12,7 @@ type prefs struct {
 	WordLength   int         `json:"wordLength"`
 	LadderLength int         `json:"ladderLength"`
 	HighScores   []highScore `json:"highScores,omitempty"`
+	MaxScores    int         `json:"maxScores"`
 }
 type highScore struct {
 	Score        float64 `json:"score"`
@@ -27,12 +28,14 @@ const (
 	prefsFilename       = "prefs.json"
 	defaultWordLength   = 3
 	defaultLadderLength = 5
+	defaultMaxScores    = 10
 )
 
 func newPrefs() *prefs {
 	result := &prefs{
 		WordLength:   defaultWordLength,
 		LadderLength: defaultLadderLength,
+		MaxScores:    defaultMaxScores,
 	}
 	if f, err := os.Open(prefsFilename); err == nil {
 		defer f.Close()
@@ -81,8 +84,8 @@ func (p *prefs) addScore(score, maxScore float64, wordLength, ladderLength int, 
 			}
 			return 0
 		})
-		if len(scores) > 10 {
-			scores = scores[:10]
+		if len(scores) > p.MaxScores {
+			scores = scores[:p.MaxScores]
 		}
 		p.HighScores = scores
 		p.save()
