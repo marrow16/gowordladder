@@ -247,7 +247,7 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 				s := v.entries[v.onStep]
 				s = s[:v.onChar] + k + s[v.onChar+1:]
 				v.entries[v.onStep] = s
-				if v.onChar < v.puzzle.WordLength-1 {
+				if v.onChar < v.puzzle.WordLength-1 && k != "_" {
 					v.onChar++
 				}
 				v.checkWord(m)
@@ -522,7 +522,9 @@ func (v *viewPlay) hintWordTemplate() {
 		template := []rune(prevWord.String())
 		for _, solution := range v.puzzle.Solutions {
 			ladder := solution.Ladder()
-			templateDifferences(template, ladder[v.onStep+1])
+			if ladder[v.onStep].String() == prevWord.String() {
+				templateDifferences(template, ladder[v.onStep+1])
+			}
 		}
 		v.entries[v.onStep] = string(template)
 	default:
@@ -530,7 +532,9 @@ func (v *viewPlay) hintWordTemplate() {
 		template := []rune(nextWord.String())
 		for _, solution := range v.puzzle.Solutions {
 			ladder := solution.Ladder()
-			templateDifferences(template, ladder[v.onStep+1])
+			if ladder[v.onStep+2].String() == nextWord.String() {
+				templateDifferences(template, ladder[v.onStep+1])
+			}
 		}
 		v.entries[v.onStep] = string(template)
 	}

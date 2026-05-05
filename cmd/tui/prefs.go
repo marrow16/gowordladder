@@ -46,6 +46,11 @@ func newPrefs() *prefs {
 			if result.LadderLength < 2 {
 				result.LadderLength = defaultLadderLength
 			}
+			if result.MaxScores < defaultMaxScores {
+				result.MaxScores = defaultMaxScores
+			} else if result.MaxScores > 100 {
+				result.MaxScores = 100
+			}
 			dict := words.NewDictionary(result.WordLength)
 			if result.LadderLength > dict.MaxSteps() {
 				result.LadderLength = dict.MaxSteps()

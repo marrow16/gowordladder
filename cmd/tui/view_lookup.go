@@ -72,7 +72,7 @@ func (v *viewLookup) content(m *model) (string, *tea.Cursor) {
 			sb.WriteString(" " + errorStyle.Render("No meanings found in API dictionary") + "\n")
 			lines++
 			if v.lookupResult.inDictionary {
-				sb.WriteString(" " + helpStyle.Render("(but word exists in my dictionary") + "\n")
+				sb.WriteString(" " + highlightStyle.Render("But word exists in my dictionary") + "\n")
 				lines++
 			}
 		} else {
