@@ -181,10 +181,13 @@ func (v *viewLookup) doLookup() tea.Cmd {
 	return nil
 }
 
+const (
+	dictionaryUrl = "https://freedictionaryapi.com/api/v1"
+)
+
 func (v *viewLookup) apiLookup() (result *dictionaryResponse, err error) {
-	const dictionaryUrl = "https://freedictionaryapi.com/api/v1/entries/en/"
 	var req *http.Request
-	if req, err = http.NewRequest("GET", dictionaryUrl+strings.ToLower(v.input.value()), nil); err == nil {
+	if req, err = http.NewRequest("GET", dictionaryUrl+"/entries/en/"+strings.ToLower(v.input.value()), nil); err == nil {
 		var resp *http.Response
 		if resp, err = http.DefaultClient.Do(req); err == nil {
 			defer resp.Body.Close()
@@ -247,29 +250,4 @@ func (r *dictionaryResponse) buildLines(width int) []string {
 		}
 	}
 	return result
-}
-
-func wrap(text string, maxWidth int) []string {
-	if len(text) <= maxWidth {
-		return []string{text}
-	}
-	wds := strings.Fields(text)
-	var lines []string
-	var current string
-	for _, w := range wds {
-		if current == "" {
-			current = w
-			continue
-		}
-		if len(current)+1+len(w) <= maxWidth {
-			current += " " + w
-		} else {
-			lines = append(lines, current)
-			current = w
-		}
-	}
-	if current != "" {
-		lines = append(lines, current)
-	}
-	return lines
 }

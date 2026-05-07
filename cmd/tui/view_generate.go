@@ -81,7 +81,7 @@ func (v *viewGenerate) content(m *model) (string, *tea.Cursor) {
 		sb.WriteString(inputStyle.Width(2).Render(fmt.Sprintf("%2d", v.wordLen)))
 		sb.WriteString("\n" + promptLadderLength)
 		if v.currentInput == nil {
-			v.currentInput = &numberInput{maxLength: 2}
+			v.currentInput = &numberInput{maxLength: 2, current: strconv.Itoa(m.prefs.LadderLength)}
 		}
 		s, cpx = v.currentInput.render()
 		sb.WriteString(s)

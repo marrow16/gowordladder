@@ -3,7 +3,6 @@ package main
 import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"fmt"
 	"gowordladder/generator"
 	"gowordladder/solving"
 	"gowordladder/words"
@@ -25,12 +24,13 @@ const (
 	play
 	lookup
 	highs
+	help
 )
 
 func (m mode) String() string {
 	switch m {
 	case solve:
-		return "Solve"
+		return "Solver"
 	case generate:
 		return "Generate"
 	case solutions:
@@ -41,6 +41,8 @@ func (m mode) String() string {
 		return "Lookup Word"
 	case highs:
 		return "High Scores"
+	case help:
+		return "Help"
 	}
 	return ""
 }
@@ -52,6 +54,9 @@ type view interface {
 	update(m *model, msg tea.Msg) tea.Cmd
 	wordLength() int
 	currentWord() string
+}
+type viewShow interface {
+	show(backMode mode, backView view)
 }
 
 type model struct {
@@ -68,6 +73,7 @@ type model struct {
 	viewSolutions solutionsView
 	viewLookup    lookupView
 	viewScores    scoresView
+	viewHelp      helpView
 
 	dictionary          *words.Dictionary
 	dictionaryLoadTimes map[int]time.Duration
@@ -102,6 +108,7 @@ func newModel(withLogging bool) *model {
 		viewSolutions:       &viewSolutions{},
 		viewLookup:          &viewLookup{},
 		viewScores:          &viewScores{},
+		viewHelp:            &viewHelp{},
 		dictionaryLoadTimes: map[int]time.Duration{},
 	}
 }
@@ -128,6 +135,12 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch mt.String() {
 		case "ctrl+c", "esc":
 			return m, tea.Quit
+		case "f1":
+			if m.mode != help {
+				m.viewHelp.show(m.mode, m.currentView)
+				m.mode = help
+				m.currentView = m.viewHelp
+			}
 		case "ctrl+w":
 			if m.mode != lookup {
 				cw := m.currentView.currentWord()
@@ -191,11 +204,20 @@ func (m *model) View() tea.View {
 }
 
 func (m *model) headerView() string {
-	return headerStyle.Width(m.width).Render(fmt.Sprintf("Go Word Ladder - %s", m.mode))
+	hdr := "Go Word Ladder - " + m.mode.String()
+	if m.mode != help {
+		const helpHdr = " F1:help"
+		return headerStyle.Width(m.width).Render(center3(m.width, helpHdr, hdr, ""))
+	} else {
+		return headerStyle.Width(m.width).Render(hdr)
+	}
 }
 
 func (m *model) footerView() string {
-	return helpStyle.Width(m.width).Render(m.currentView.help() + "  •  esc: Exit")
+	if h := m.currentView.help(); h != "" {
+		return helpStyle.Width(m.width).Render(h + "  •  esc: Exit")
+	}
+	return helpStyle.Width(m.width).Render("esc: Exit")
 }
 
 func (m *model) loadDictionary(wordLength int) *words.Dictionary {
@@ -240,11 +262,52 @@ func (m *model) restoreView(rm mode, rv view) {
 	m.mode = rm
 }
 
+func center3(wd int, left, mid, right string) string {
+	ll, lm, lr := len(left), len(mid), len(right)
+	lmw := lm / 2
+	rmw := lm - lmw
+	lw := wd / 2
+	rw := wd - lw
+	lpad, rpad := "", ""
+	if w := lw - lmw - ll; w > 0 {
+		lpad = strings.Repeat(" ", w)
+	}
+	if w := rw - rmw - lr; w > 0 {
+		rpad = strings.Repeat(" ", w)
+	}
+	return left + lpad + mid + rpad + right
+}
+
 func padLines(lines int) string {
 	if lines > 0 {
 		return strings.Repeat("\n", lines)
 	}
 	return ""
+}
+
+func wrap(text string, maxWidth int) []string {
+	if len(text) <= maxWidth {
+		return []string{text}
+	}
+	wds := strings.Fields(text)
+	lines := make([]string, 0, len(wds)/2)
+	var current string
+	for _, w := range wds {
+		if current == "" {
+			current = w
+			continue
+		}
+		if len(current)+1+len(w) <= maxWidth {
+			current += " " + w
+		} else {
+			lines = append(lines, current)
+			current = w
+		}
+	}
+	if current != "" {
+		lines = append(lines, current)
+	}
+	return lines
 }
 
 var (

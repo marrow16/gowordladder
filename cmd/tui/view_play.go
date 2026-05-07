@@ -104,24 +104,11 @@ func (v *viewPlay) content(m *model) (string, *tea.Cursor) {
 }
 
 func (v *viewPlay) fitHeader(m *model) string {
-	solsS := fmt.Sprintf(" Solutions: %d", len(v.puzzle.Solutions))
-	currS := fmt.Sprintf("Current score: %.0f", v.currentScore)
-	maxS := fmt.Sprintf("Max score: %.0f ", v.puzzle.MaxScore)
-	solsLen, currLen, maxLen := len(solsS), len(currS), len(maxS)
-	midPadL := " "
-	midPadR := " "
-	halfWd := m.width / 2
-	halfScWd := currLen / 2
-	if p := halfWd - halfScWd - solsLen; p > 0 {
-		midPadL = strings.Repeat(" ", p)
-	}
-	if p := halfWd - (currLen - halfScWd) - maxLen; p > 0 {
-		midPadR = strings.Repeat(" ", p)
-	}
-	if solsLen+len(midPadL)+currLen+len(midPadR)+maxLen < m.width {
-		midPadR += " "
-	}
-	return headerStyle.Render(solsS + midPadL + currS + midPadR + maxS)
+	return headerStyle.Width(m.width).Render(center3(
+		m.width,
+		fmt.Sprintf(" Solutions: %d ", len(v.puzzle.Solutions)),
+		fmt.Sprintf("Current score: %.0f", v.currentScore),
+		fmt.Sprintf(" Max score: %.0f ", v.puzzle.MaxScore)))
 }
 
 func (v *viewPlay) help() string {
@@ -133,7 +120,7 @@ func (v *viewPlay) help() string {
 	)
 	switch {
 	case v.solved:
-		return hintStyle.Render("You solved it!") + solvedHelp
+		return hintStyle.Render(fmt.Sprintf("You solved it!  Score: %.0f (%0.f%%)", v.currentScore, (v.currentScore/v.puzzle.MaxScore)*100)) + solvedHelp
 	case v.hint != "":
 		return hintStyle.Render(v.hint) + secondHelp
 	case v.warning != "":

@@ -8,15 +8,15 @@ import (
 	"strings"
 )
 
+type scoresView interface {
+	view
+	viewShow
+}
+
 type viewScores struct {
 	backMode mode
 	backView view
 	offsetY  int
-}
-
-type scoresView interface {
-	view
-	show(backMode mode, backView view)
 }
 
 func (v *viewScores) show(backMode mode, backView view) {
