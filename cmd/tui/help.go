@@ -178,7 +178,7 @@ var helpText = helpData{
 	{
 		"About",
 		[]helpLine{
-			{text("The built-in dictionary is based on the Official Collins Scrabble Words (2019).")},
+			{text("The built-in dictionary is based on the Official Collins Scrabble Words (2024).")},
 			{},
 			{text("Word meanings are brought to you courtesy of "), highlight(dictionaryUrl)},
 			{},
