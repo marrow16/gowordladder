@@ -27,8 +27,9 @@ type viewGenerate struct {
 	startWord *words.Word
 	endWord   *words.Word
 
-	currentInput input
-	currentError string
+	currentInput             input
+	currentError             string
+	wasWordLen, wasLadderLen int
 
 	puzzle             *generator.Puzzle
 	puzzleGenerateTime time.Duration
@@ -66,7 +67,11 @@ func (v *viewGenerate) content(m *model) (string, *tea.Cursor) {
 	case generateWordLength:
 		sb.WriteString(promptWordLength)
 		if v.currentInput == nil {
-			v.currentInput = &numberInput{maxLength: 2, current: strconv.Itoa(m.prefs.WordLength)}
+			initial := strconv.Itoa(m.prefs.WordLength)
+			if v.wasWordLen > 0 {
+				initial = strconv.Itoa(v.wasWordLen)
+			}
+			v.currentInput = &numberInput{maxLength: 2, current: initial}
 		}
 		s, cpx = v.currentInput.render()
 		sb.WriteString(s)
@@ -81,7 +86,11 @@ func (v *viewGenerate) content(m *model) (string, *tea.Cursor) {
 		sb.WriteString(inputStyle.Width(2).Render(fmt.Sprintf("%2d", v.wordLen)))
 		sb.WriteString("\n" + promptLadderLength)
 		if v.currentInput == nil {
-			v.currentInput = &numberInput{maxLength: 2, current: strconv.Itoa(m.prefs.LadderLength)}
+			initial := strconv.Itoa(m.prefs.LadderLength)
+			if v.wasLadderLen > 0 {
+				initial = strconv.Itoa(v.wasLadderLen)
+			}
+			v.currentInput = &numberInput{maxLength: 2, current: initial}
 		}
 		s, cpx = v.currentInput.render()
 		sb.WriteString(s)
@@ -174,29 +183,30 @@ func (v *viewGenerate) content(m *model) (string, *tea.Cursor) {
 
 func (v *viewGenerate) help() string {
 	if v.step == generateGenerated {
-		return "ctrl+p: Play  •  enter: Solutions\nctrl+n: New  •  ctrl+s: Solver"
+		return ctrlPlay + ": Play  •  enter: Solutions\n" + ctrlNew + ": New  •  " + ctrlSolver + ": Solver"
 	} else {
-		return "\nctrl+n: New  •  ctrl+s: Solver"
+		return "\n" + ctrlNew + ": New  •  " + ctrlSolver + ": Solver"
 	}
 }
 
 func (v *viewGenerate) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	v.currentError = ""
 	switch msg.String() {
-	case "ctrl+n":
+	case ctrlNew:
 		v.currentInput = nil
 		v.currentError = ""
+		v.wasWordLen, v.wasLadderLen = v.wordLen, v.ladderLen
 		v.wordLen = 0
 		v.ladderLen = 0
 		v.startWord = nil
 		v.endWord = nil
 		v.puzzle = nil
 		v.step = generateWordLength
-	case "ctrl+p":
+	case ctrlPlay:
 		if v.puzzle != nil {
 			m.play(*v.puzzle)
 		}
-	case "enter":
+	case enter:
 		switch v.step {
 		case generateWordLength:
 			return v.enterWordLength(m)

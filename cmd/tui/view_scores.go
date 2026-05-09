@@ -61,28 +61,28 @@ var (
 )
 
 func (v *viewScores) help() string {
-	return "ctrl+n: Clear  •  ctrl+p: Play again  •  ctrl+b: Back"
+	return ctrlNew + ": Clear  •  " + ctrlPlay + ": Play again  •  " + back + ": Back"
 }
 
 func (v *viewScores) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
-	case "ctrl+b", "backspace":
+	case back, backspace:
 		m.restoreView(v.backMode, v.backView)
-	case "ctrl+n":
+	case ctrlNew:
 		v.offsetY = 0
 		m.clearScores()
-	case "ctrl+p":
+	case ctrlPlay:
 		if h := v.offsetY / 2; h < len(m.prefs.HighScores) {
 			hs := m.prefs.HighScores[h]
 			if puzzle, err := generator.GeneratePuzzle(hs.WordLength, hs.LadderLength, &hs.StartWord, &hs.EndWord); err == nil {
 				m.play(*puzzle)
 			}
 		}
-	case "up":
+	case up:
 		if v.offsetY > 0 {
 			v.offsetY -= 2
 		}
-	case "down":
+	case down:
 		if (v.offsetY / 2) < len(m.prefs.HighScores)-1 {
 			v.offsetY += 2
 		}

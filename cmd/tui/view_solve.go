@@ -138,23 +138,23 @@ func (v *viewSolve) content(m *model) (string, *tea.Cursor) {
 
 func (v *viewSolve) help() string {
 	if v.step == solveSolved && len(v.solutions) > 0 {
-		return "ctrl+p: Play  •  enter: Solutions\nctrl+n: New  •  ctrl+g: Generate"
+		return ctrlPlay + ": Play  •  enter: Solutions\n" + ctrlNew + ": New  •  " + ctrlGenerate + ": Generate"
 	} else {
-		return "\nctrl+n: New  •  ctrl+g: Generate"
+		return "\n" + ctrlNew + ": New  •  " + ctrlGenerate + ": Generate"
 	}
 }
 
 func (v *viewSolve) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	v.currentError = ""
 	switch msg.String() {
-	case "ctrl+n":
+	case ctrlNew:
 		v.currentInput = nil
 		v.currentError = ""
 		v.solutions = nil
 		v.startWord = nil
 		v.endWord = nil
 		v.step = solveStartWord
-	case "ctrl+p":
+	case ctrlPlay:
 		if v.step == solveSolved && len(v.solutions) > 0 {
 			sw, ew := v.startWord.String(), v.endWord.String()
 			ll := len(v.solutions[0].Ladder())
@@ -162,7 +162,7 @@ func (v *viewSolve) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 				m.play(*puzzle)
 			}
 		}
-	case "enter":
+	case enter:
 		switch v.step {
 		case solveStartWord:
 			return v.enterStartWord(m)

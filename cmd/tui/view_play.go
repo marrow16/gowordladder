@@ -38,14 +38,6 @@ const (
 )
 
 func (v *viewPlay) content(m *model) (string, *tea.Cursor) {
-	const (
-		topLeft     = "╭"
-		topRight    = "╮"
-		topBottom   = "─"
-		bottomLeft  = "╰"
-		bottomRight = "╯"
-		vertical    = "│"
-	)
 	var sb strings.Builder
 	sb.WriteString(v.fitHeader(m))
 	lines := headerLines
@@ -113,9 +105,9 @@ func (v *viewPlay) fitHeader(m *model) string {
 
 func (v *viewPlay) help() string {
 	const (
-		firstHelp   = "ctrl+h: Solutions  •  ?: Hint  •  ctrl+f: Fill  •  space: Clear"
-		secondHelp  = "\nctrl+n: New  •  ctrl+g: Generate  •  ctrl+s: Solver"
-		solvedHelp  = "\nctrl+n: New  •  ctrl+h: Solutions  •  ctrl+g: Generate"
+		firstHelp   = ctrlHelp + ": Solutions  •  ?: Hint  •  " + ctrlFill + ": Fill  •  space: Clear"
+		secondHelp  = "\n" + ctrlNew + ": New  •  " + ctrlGenerate + ": Generate  •  " + ctrlSolver + ": Solver"
+		solvedHelp  = "\n" + ctrlNew + ": New  •  " + ctrlHelp + ": Solutions  •  " + ctrlGenerate + ": Generate"
 		defaultHelp = firstHelp + secondHelp
 	)
 	switch {
@@ -143,14 +135,14 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	v.warning = ""
 	v.wrong = ""
 	switch msg.String() {
-	case "ctrl+n":
+	case ctrlNew:
 		return v.generateNew()
-	case "ctrl+h":
+	case ctrlHelp:
 		if !v.solved {
 			v.hintDeduction(solutionsPeek)
 		}
 		m.showSolutions(v.puzzle.Solutions)
-	case "up":
+	case up:
 		if v.onStep > 0 {
 			v.onStep--
 			v.ensureCursorVisible(m)
@@ -168,12 +160,12 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 			v.onChar = 0
 			v.ensureCursorVisible(m)
 		}
-	case "down":
+	case down:
 		if v.onStep < len(v.entries)-1 {
 			v.onStep++
 			v.ensureCursorVisible(m)
 		}
-	case "enter", "tab":
+	case enter, "tab":
 		if !v.solved {
 			v.checkWord(m)
 			if v.wrong == "" && v.warning == "" && v.onStep < len(v.entries)-1 {
@@ -186,7 +178,7 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 			v.onStep++
 			v.ensureCursorVisible(m)
 		}
-	case "left":
+	case left:
 		if v.onChar > 0 {
 			v.onChar--
 		} else if v.onStep > 0 {
@@ -194,7 +186,7 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 			v.onChar = v.puzzle.WordLength - 1
 			v.ensureCursorVisible(m)
 		}
-	case "right":
+	case right:
 		if v.onChar < v.puzzle.WordLength-1 {
 			v.onChar++
 		} else if v.onStep < len(v.entries)-1 {
@@ -202,7 +194,7 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 			v.onChar = 0
 			v.ensureCursorVisible(m)
 		}
-	case "backspace":
+	case backspace:
 		if !v.solved {
 			delete(v.okWords, v.onStep)
 			s := v.entries[v.onStep]
@@ -218,7 +210,7 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 			v.entries[v.onStep] = strings.Repeat("_", v.puzzle.WordLength)
 			v.onChar = 0
 		}
-	case "ctrl+f":
+	case ctrlFill:
 		if !v.solved {
 			delete(v.okWords, v.onStep)
 			v.fillWord(m)

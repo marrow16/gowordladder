@@ -8,8 +8,6 @@ import (
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/text"
 	"gonum.org/v1/plot/vg"
-	"gowordladder/generator"
-	"gowordladder/solving"
 	"gowordladder/words"
 	"image/color"
 	"io"
@@ -40,7 +38,6 @@ func TestAnalysisReport(t *testing.T) {
 	counts := [15]int{}
 	longests := [15]int{}
 	bigMax := 0
-	bigMaxWordLen := 0
 	totalWords := 0
 	for wl := 2; wl <= 15; wl++ {
 		d := words.NewDictionary(wl)
@@ -58,7 +55,6 @@ func TestAnalysisReport(t *testing.T) {
 				}
 				if mx > bigMax {
 					bigMax = mx
-					bigMaxWordLen = wl
 				}
 				if w.IsDoublet() {
 					doublets[wl-1]++
@@ -168,35 +164,19 @@ func TestAnalysisReport(t *testing.T) {
 
 	// longest ladders...
 	printMdHeader(f, 3, "Longest Ladders")
-	printMdNotes(f, fmt.Sprintf("%d-letter words yields the longest ladders (%d)\n", bigMaxWordLen, bigMax), false)
-	d := words.NewDictionary(bigMaxWordLen)
-	wds := d.WordsWithSteps(bigMax)
-	_, _ = fmt.Fprint(f, "|")
-	for range len(wds) {
-		_, _ = fmt.Fprint(f, strings.Repeat(" ", bigMaxWordLen+4)+"|")
-	}
-	_, _ = fmt.Fprint(f, "\n|")
-	for range len(wds) {
-		_, _ = fmt.Fprint(f, strings.Repeat("-", bigMaxWordLen+4)+"|")
-	}
-	solutions := make([]*solving.Solution, 0)
-	alts := make([]int, 0)
-	for _, wd := range wds {
-		sw := wd.String()
-		puzzle, err := generator.GeneratePuzzle(bigMaxWordLen, bigMax, &sw, nil)
-		require.NoError(t, err)
-		solutions = append(solutions, puzzle.Solutions[0])
-		alts = append(alts, len(puzzle.Solutions)-1)
-	}
-	for l := 0; l < bigMax; l++ {
-		_, _ = fmt.Fprint(f, "\n|")
-		for _, s := range solutions {
-			_, _ = fmt.Fprintf(f, " `%s` |", s.Ladder()[l])
+	for wl := 2; wl <= 15; wl++ {
+		printMdHeader(f, 4, fmt.Sprintf("%d-letter words", wl))
+		d := words.NewDictionary(wl)
+		mxll := d.MaxSteps()
+		wds := d.WordsWithSteps(mxll)
+		_, _ = fmt.Fprintf(f, "* _**%d**_ words at maximum ladder length _**%d**_\n* ", len(wds), mxll)
+		for w, wd := range wds {
+			if w > 0 {
+				_, _ = fmt.Fprint(f, ", ")
+			}
+			_, _ = fmt.Fprintf(f, "`%s`", wd)
 		}
-	}
-	_, _ = fmt.Fprint(f, "\n|")
-	for _, alt := range alts {
-		_, _ = fmt.Fprintf(f, " %d alternatives |", alt)
+		_, _ = fmt.Fprint(f, "\n\n")
 	}
 }
 

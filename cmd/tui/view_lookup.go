@@ -90,21 +90,21 @@ func (v *viewLookup) content(m *model) (string, *tea.Cursor) {
 }
 
 func (v *viewLookup) help() string {
-	return "enter: Lookup  •  ctrl+b: Back"
+	return "enter: Lookup  •  " + back + ": Back"
 }
 
 func (v *viewLookup) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
-	case "ctrl+b":
+	case back:
 		m.restoreView(v.backMode, v.backView)
 		return nil
-	case "up":
+	case up:
 		if v.offsetY > 0 {
 			v.offsetY--
 		}
-	case "down":
+	case down:
 		v.offsetY++
-	case "enter":
+	case enter:
 		return v.doLookup()
 	}
 	if v.input.key(msg) {
@@ -135,10 +135,16 @@ func (v *viewLookup) update(m *model, msg tea.Msg) tea.Cmd {
 }
 
 func (v *viewLookup) wordLength() int {
+	if v.input != nil {
+		return len(v.input.value())
+	}
 	return 0
 }
 
 func (v *viewLookup) currentWord() string {
+	if v.input != nil {
+		return v.input.value()
+	}
 	return ""
 }
 

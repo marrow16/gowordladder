@@ -36,7 +36,7 @@ func (i *wordInput) render() (string, int) {
 func (i *wordInput) key(msg tea.KeyPressMsg) bool {
 	k := strings.ToLower(msg.String())
 	switch {
-	case k == "backspace" && len(i.current) > 0:
+	case k == backspace && len(i.current) > 0:
 		i.current = i.current[:len(i.current)-1]
 		return true
 	case len(k) == 1 && ((i.allowUnderscores && k == "_") || (k >= "a" && k <= "z")):
@@ -79,10 +79,10 @@ func (i *numberInput) render() (string, int) {
 func (i *numberInput) key(msg tea.KeyPressMsg) bool {
 	k := msg.String()
 	switch {
-	case k == "backspace" && len(i.current) > 0:
+	case k == backspace && len(i.current) > 0:
 		i.current = i.current[:len(i.current)-1]
 		return true
-	case k == "up":
+	case k == up:
 		if i.current == "" {
 			i.current = "1"
 			return true
@@ -92,7 +92,7 @@ func (i *numberInput) key(msg tea.KeyPressMsg) bool {
 				return true
 			}
 		}
-	case k == "down":
+	case k == down:
 		if n, err := strconv.Atoi(i.current); err == nil && n > 0 {
 			if s := strconv.Itoa(n - 1); len(s) <= i.maxLength {
 				i.current = s

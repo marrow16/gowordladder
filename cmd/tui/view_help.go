@@ -35,18 +35,18 @@ func (v *viewHelp) content(m *model) (string, *tea.Cursor) {
 }
 
 func (v *viewHelp) help() string {
-	return "ctrl+b/backspace: Back"
+	return back + "/" + backspace + ": Back"
 }
 
 func (v *viewHelp) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
-	case "ctrl+b", "backspace":
+	case back, backspace:
 		m.restoreView(v.backMode, v.backView)
-	case "up":
+	case up:
 		if v.offsetY > 0 {
 			v.offsetY--
 		}
-	case "down":
+	case down:
 		v.offsetY++
 	}
 	return nil

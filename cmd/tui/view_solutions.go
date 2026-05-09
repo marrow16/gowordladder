@@ -30,12 +30,6 @@ type viewSolutions struct {
 
 func (v *viewSolutions) content(m *model) (string, *tea.Cursor) {
 	const (
-		topLeft     = "╭"
-		topRight    = "╮"
-		topBottom   = "─"
-		bottomLeft  = "╰"
-		bottomRight = "╯"
-		vertical    = "│"
 		footerLines = 2
 	)
 	var sb strings.Builder
@@ -129,96 +123,80 @@ func (v *viewSolutions) content(m *model) (string, *tea.Cursor) {
 
 func (v *viewSolutions) help() string {
 	if v.showingAnalysis {
-		return "↑/↓: Scroll  •  ctrl+b: Back"
+		return "↑/↓: Scroll  •  " + back + ": Back"
 	} else if len(v.solutions) > 1 {
-		return "←/→: Solutions  •  ↑/↓: Scroll  •  ctrl+b: Back  •  ctrl+a: Analyse"
+		return "←/→: Solutions  •  ↑/↓: Scroll  •  " + back + ": Back  •  " + ctrlAnalyse + ": Analyse"
 	} else {
-		return "←/→: Solutions  •  ↑/↓: Scroll  •  ctrl+b: Back"
+		return "←/→: Solutions  •  ↑/↓: Scroll  •  " + back + ": Back"
 	}
 }
 
 func (v *viewSolutions) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
-	case "ctrl+b", "backspace":
+	case back, backspace:
 		if v.showingAnalysis {
 			v.showingAnalysis = false
 		} else {
 			m.restoreView(v.backMode, v.backView)
 		}
-	case "ctrl+a":
+	case ctrlAnalyse:
 		if !v.showingAnalysis && len(v.solutions) > 1 {
 			return v.analyse()
 		}
-	case "up":
-		v.scrollUp(m)
-	case "shift+up":
-		v.offsetY = 0
-	case "down":
-		v.scrollDown(m)
-	case "left":
-		v.panLeft(m)
-	case "shift+left":
-		v.pageLeft(m)
-	case "right":
-		v.panRight(m)
-	case "shift+right":
-		v.pageRight(m)
+	case up:
+		if v.offsetY > 0 {
+			v.offsetY--
+		}
+	case pageUp:
+		v.offsetY -= m.height
+		if v.offsetY < 0 {
+			v.offsetY = 0
+		}
+	case down:
+		if v.offsetY < v.maxLadderLen && (v.offsetY+m.height) < (v.maxLadderLen+5) {
+			v.offsetY++
+		}
+	case pageDown:
+		v.offsetY += m.height
+		if (v.offsetY + m.height) >= (v.maxLadderLen + 5) {
+			v.offsetY = (v.maxLadderLen - m.height) + 5
+		}
+	case left:
+		if !v.showingAnalysis {
+			if v.offsetX > 0 {
+				v.offsetX--
+			}
+		}
+	case pageLeft:
+		if !v.showingAnalysis {
+			if v.offsetX > 0 && v.solutionWidth > 0 {
+				pgWd := (m.width / v.solutionWidth) - 1
+				if l := v.offsetX - pgWd; l >= 0 {
+					v.offsetX = l
+				} else {
+					v.offsetX = 0
+				}
+			}
+		}
+	case right:
+		if !v.showingAnalysis {
+			if v.offsetX < len(v.solutions)-1 {
+				v.offsetX++
+			}
+		}
+	case pageRight:
+		if !v.showingAnalysis {
+			if v.solutionWidth > 0 {
+				pgWd := (m.width / v.solutionWidth) - 1
+				if l := v.offsetX + pgWd; l < len(v.solutions) {
+					v.offsetX = l
+				} else {
+					v.offsetX = len(v.solutions) - 1
+				}
+			}
+		}
 	}
 	return nil
-}
-
-func (v *viewSolutions) scrollUp(m *model) {
-	if v.offsetY > 0 {
-		v.offsetY--
-	}
-}
-
-func (v *viewSolutions) scrollDown(m *model) {
-	if v.offsetY < v.maxLadderLen && (v.offsetY+m.height) < (v.maxLadderLen+5) {
-		v.offsetY++
-	}
-}
-
-func (v *viewSolutions) panLeft(m *model) {
-	if !v.showingAnalysis {
-		if v.offsetX > 0 {
-			v.offsetX--
-		}
-	}
-}
-
-func (v *viewSolutions) pageLeft(m *model) {
-	if !v.showingAnalysis {
-		if v.offsetX > 0 && v.solutionWidth > 0 {
-			pgWd := (m.width / v.solutionWidth) - 1
-			if l := v.offsetX - pgWd; l >= 0 {
-				v.offsetX = l
-			} else {
-				v.offsetX = 0
-			}
-		}
-	}
-}
-
-func (v *viewSolutions) panRight(m *model) {
-	if !v.showingAnalysis {
-		if v.offsetX < len(v.solutions)-1 {
-			v.offsetX++
-		}
-	}
-}
-
-func (v *viewSolutions) pageRight(m *model) {
-	if !v.showingAnalysis {
-		if v.solutionWidth > 0 {
-			pgWd := (m.width / v.solutionWidth) - 1
-			if l := v.offsetX + pgWd; l < len(v.solutions) {
-				v.offsetX = l
-			} else {
-				v.offsetX = len(v.solutions) - 1
-			}
-		}
-	}
 }
 
 func (v *viewSolutions) analyse() tea.Cmd {

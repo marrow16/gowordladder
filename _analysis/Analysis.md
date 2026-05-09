@@ -61,88 +61,87 @@ This table shows the spread of adjacent word counts for each word in the diction
 
 ### Longest Ladders
 
-8-letter words yields the longest ladders (80)
 
-|            |            |            |
-|------------|------------|------------|
-| `TOWNLING` | `TWIDDLED` | `TWIDDLER` |
-| `TOWELING` | `TWIDDLES` | `TWIDDLES` |
-| `TOWERING` | `TWADDLES` | `TWADDLES` |
-| `DOWERING` | `SWADDLES` | `SWADDLES` |
-| `DOVERING` | `STADDLES` | `STADDLES` |
-| `DOVENING` | `STUDDLES` | `STUDDLES` |
-| `DAVENING` | `STUDDIES` | `STUDDIES` |
-| `RAVENING` | `STEDDIES` | `STEDDIES` |
-| `RAVELING` | `STEEDIES` | `STEEDIES` |
-| `REVELING` | `STEELIES` | `STEELIES` |
-| `REVILING` | `STEELIER` | `STEELIER` |
-| `RESILING` | `SKEELIER` | `SKEELIER` |
-| `RESITING` | `SKELLIER` | `SKELLIER` |
-| `REBITING` | `SKILLIER` | `SKILLIER` |
-| `DEBITING` | `STILLIER` | `STILLIER` |
-| `DEBUTING` | `STILTIER` | `STILTIER` |
-| `DEPUTING` | `STINTIER` | `STINTIER` |
-| `REPUTING` | `STINGIER` | `STINGIER` |
-| `REPURING` | `SLINGIER` | `SLINGIER` |
-| `RECURING` | `SLANGIER` | `SLANGIER` |
-| `RECULING` | `SLANTIER` | `SLANTIER` |
-| `RECKLING` | `SCANTIER` | `SCANTIER` |
-| `RUCKLING` | `SCANTIES` | `SCANTIES` |
-| `SUCKLING` | `SHANTIES` | `SHANTIES` |
-| `SICKLING` | `SHANNIES` | `SHANNIES` |
-| `TICKLING` | `SHARNIES` | `SHARNIES` |
-| `TINKLING` | `SHARPIES` | `SHARPIES` |
-| `WINKLING` | `CHARPIES` | `CHARPIES` |
-| `WINDLING` | `CHAPPIES` | `CHAPPIES` |
-| `WIDDLING` | `CRAPPIES` | `CRAPPIES` |
-| `TIDDLING` | `CRAPPIER` | `CRAPPIER` |
-| `TODDLING` | `CRAMPIER` | `CRAMPIER` |
-| `TOODLING` | `CRIMPIER` | `CRIMPIER` |
-| `TOOTLING` | `CRISPIER` | `CRISPIER` |
-| `TOOTHING` | `CRISPIES` | `CRISPIES` |
-| `TROTHING` | `CRISPINS` | `CRISPINS` |
-| `TROTTING` | `CRISPING` | `CRISPING` |
-| `TROUTING` | `CRIMPING` | `CRIMPING` |
-| `TROUPING` | `CRUMPING` | `CRUMPING` |
-| `TROMPING` | `TRUMPING` | `TRUMPING` |
-| `TRUMPING` | `TROMPING` | `TROMPING` |
-| `CRUMPING` | `TROUPING` | `TROUPING` |
-| `CRIMPING` | `TROUTING` | `TROUTING` |
-| `CRISPING` | `TROTTING` | `TROTTING` |
-| `CRISPINS` | `TROTHING` | `TROTHING` |
-| `CRISPIES` | `TOOTHING` | `TOOTHING` |
-| `CRISPIER` | `TOOTLING` | `TOOTLING` |
-| `CRIMPIER` | `TOODLING` | `TOODLING` |
-| `CRAMPIER` | `TODDLING` | `TODDLING` |
-| `CHAMPIER` | `TIDDLING` | `TIDDLING` |
-| `CHAPPIER` | `WIDDLING` | `WIDDLING` |
-| `CHAPPIES` | `WINDLING` | `WINDLING` |
-| `CHARPIES` | `WINKLING` | `WINKLING` |
-| `SHARPIES` | `TINKLING` | `TINKLING` |
-| `SHARNIES` | `TICKLING` | `TICKLING` |
-| `SHANNIES` | `SICKLING` | `SICKLING` |
-| `SHANTIES` | `SUCKLING` | `SUCKLING` |
-| `SCANTIES` | `RUCKLING` | `RUCKLING` |
-| `SCANTIER` | `RECKLING` | `RECKLING` |
-| `SLANTIER` | `RECULING` | `RECULING` |
-| `SLANGIER` | `RECURING` | `RECURING` |
-| `SLINGIER` | `REPURING` | `REPURING` |
-| `STINGIER` | `REPUTING` | `REPUTING` |
-| `STINTIER` | `DEPUTING` | `DEPUTING` |
-| `STILTIER` | `DEBUTING` | `DEBUTING` |
-| `STILLIER` | `DEBITING` | `DEBITING` |
-| `SKILLIER` | `REBITING` | `REBITING` |
-| `SKELLIER` | `RESITING` | `RESITING` |
-| `SKEELIER` | `RESILING` | `RESILING` |
-| `STEELIER` | `REVILING` | `REVILING` |
-| `STEELIES` | `REVELING` | `REVELING` |
-| `STEEDIES` | `RAVELING` | `RAVELING` |
-| `STEDDIES` | `RAVENING` | `RAVENING` |
-| `STUDDIES` | `DAVENING` | `DAVENING` |
-| `STUDDLES` | `DOVENING` | `DOVENING` |
-| `STADDLES` | `DOVERING` | `DOVERING` |
-| `SWADDLES` | `DOWERING` | `DOWERING` |
-| `TWADDLES` | `TOWERING` | `TOWERING` |
-| `TWIDDLES` | `TOWELING` | `TOWELING` |
-| `TWIDDLER` | `TOWNLING` | `TOWNLING` |
-| 143 alternatives | 143 alternatives | 143 alternatives |
+#### 2-letter words
+
+* _**33**_ words at maximum ladder length _**5**_
+* `BA`, `BO`, `DA`, `DO`, `EL`, `ET`, `FA`, `GO`, `GU`, `IT`, `JA`, `JO`, `KA`, `KO`, `LA`, `LO`, `NA`, `NO`, `NU`, `PA`, `PO`, `TA`, `TO`, `UG`, `UP`, `UT`, `WO`, `XU`, `YA`, `YO`, `YU`, `ZA`, `ZO`
+
+
+#### 3-letter words
+
+* _**14**_ words at maximum ladder length _**9**_
+* `EXO`, `ISM`, `IVY`, `JIB`, `JIZ`, `KEB`, `KEF`, `KEX`, `KEY`, `MIB`, `MIZ`, `MYC`, `UEY`, `ZZZ`
+
+
+#### 4-letter words
+
+* _**2**_ words at maximum ladder length _**16**_
+* `UNAU`, `YEOW`
+
+
+#### 5-letter words
+
+* _**8**_ words at maximum ladder length _**27**_
+* `ANKHS`, `APIAN`, `APPEL`, `INPUT`, `SUHUR`, `UNAIS`, `UNAPT`, `UPDOS`
+
+
+#### 6-letter words
+
+* _**3**_ words at maximum ladder length _**43**_
+* `ANEATH`, `EMBOIL`, `UNEATH`
+
+
+#### 7-letter words
+
+* _**3**_ words at maximum ladder length _**61**_
+* `HAGFISH`, `INJECTS`, `WAGGISH`
+
+
+#### 8-letter words
+
+* _**3**_ words at maximum ladder length _**80**_
+* `TOWNLING`, `TWIDDLED`, `TWIDDLER`
+
+
+#### 9-letter words
+
+* _**6**_ words at maximum ladder length _**34**_
+* `BREEDINGS`, `HAINCHING`, `POUNCHING`, `SCANNINGS`, `SCUMMINGS`, `SMEETHING`
+
+
+#### 10-letter words
+
+* _**11**_ words at maximum ladder length _**11**_
+* `BLISTERING`, `DOXOLOGIES`, `GLISTENING`, `HOMOLOGUES`, `HOROLOGIES`, `MONOLOGGED`, `NOSOLOGIST`, `OPTOLOGIES`, `OPTOLOGIST`, `SNOTTERING`, `STOITERING`
+
+
+#### 11-letter words
+
+* _**3**_ words at maximum ladder length _**27**_
+* `DODGINESSES`, `NERVINESSES`, `PODGINESSES`
+
+
+#### 12-letter words
+
+* _**7**_ words at maximum ladder length _**7**_
+* `MATERIALIZED`, `MATERIALIZER`, `METROLOGISTS`, `PATERNALISTS`, `PATHOLOGIZED`, `ROOFLESSNESS`, `WORKLESSNESS`
+
+
+#### 13-letter words
+
+* _**9**_ words at maximum ladder length _**5**_
+* `BASIFICATIONS`, `BEARISHNESSES`, `BLOKISHNESSES`, `EXPANDABILITY`, `EXTENSIBILITY`, `FACTIONALISMS`, `FACTIONALISTS`, `FICTIONALIZED`, `RATIFICATIONS`
+
+
+#### 14-letter words
+
+* _**2**_ words at maximum ladder length _**7**_
+* `ROOFLESSNESSES`, `WORKLESSNESSES`
+
+
+#### 15-letter words
+
+* _**2**_ words at maximum ladder length _**5**_
+* `EXPANDABILITIES`, `EXTENSIBILITIES`
+
