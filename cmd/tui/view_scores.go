@@ -39,7 +39,7 @@ func (v *viewScores) content(m *model) (string, *tea.Cursor) {
 		showLines := make([]string, 0, len(m.prefs.HighScores)*2)
 		for i, s := range m.prefs.HighScores {
 			showLines = append(showLines,
-				boldScoreStyle.Render(fmt.Sprintf(" %2d. %.0f (%.0f%%)   ", i+1, s.Score, (s.Score/s.MaxScore)*100)),
+				boldStyle.Render(fmt.Sprintf(" %2d. %.0f (%.0f%%)   ", i+1, s.Score, (s.Score/s.MaxScore)*100)),
 				scoreDetailStyle.Render("     "+s.Date+"  ")+
 					highlightStyle.Render(s.StartWord)+scoreDetailStyle.Render(" to ")+highlightStyle.Render(s.EndWord)+
 					scoreDetailStyle.Render(fmt.Sprintf(" (%d rungs)", s.LadderLength)),
@@ -56,7 +56,6 @@ func (v *viewScores) content(m *model) (string, *tea.Cursor) {
 }
 
 var (
-	boldScoreStyle   = lipgloss.NewStyle().Bold(true)
 	scoreDetailStyle = lipgloss.NewStyle().Italic(true).Foreground(lipgloss.Color("#888888"))
 )
 

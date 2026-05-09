@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"math/rand"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -60,6 +61,12 @@ type view interface {
 }
 type viewShow interface {
 	show(backMode mode, backView view)
+}
+type viewPasteable interface {
+	paste(m *model, msg tea.PasteMsg)
+}
+type viewClickable interface {
+	click(m *model, msg tea.Mouse) tea.Cmd
 }
 
 type model struct {
@@ -133,9 +140,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = mt.Width
 		m.height = mt.Height
-	//	case tea.ResumeMsg:
-	//		m.suspending = false
-	//		return m, nil
 	case tea.MouseMsg:
 		mmsg := mt.Mouse()
 		switch {
@@ -148,6 +152,18 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentView.key(m, tea.KeyPressMsg{Text: down})
 		case mmsg.Button == tea.MouseWheelUp:
 			m.currentView.key(m, tea.KeyPressMsg{Text: up})
+		case mmsg.Button == tea.MouseWheelLeft:
+			m.currentView.key(m, tea.KeyPressMsg{Text: left})
+		case mmsg.Button == tea.MouseWheelRight:
+			m.currentView.key(m, tea.KeyPressMsg{Text: right})
+		case mmsg.Button == tea.MouseLeft || mmsg.Button == tea.MouseRight:
+			if cv, ok := m.currentView.(viewClickable); ok {
+				return m, cv.click(m, mmsg)
+			}
+		}
+	case tea.PasteMsg:
+		if pv, ok := m.currentView.(viewPasteable); ok {
+			pv.paste(m, mt)
 		}
 	case tea.KeyPressMsg:
 		switch mt.String() {
@@ -160,7 +176,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.currentView = m.viewHelp
 			}
 		case ctrlWord:
-			if m.mode != lookup && m.mode != distances {
+			if m.mode != lookup {
 				cw := m.currentView.currentWord()
 				cmd := m.viewLookup.lookupWord(cw, m.mode, m.currentView)
 				m.mode = lookup
@@ -335,4 +351,30 @@ func wrap(text string, maxWidth int) []string {
 		lines = append(lines, current)
 	}
 	return lines
+}
+
+func commas(n int) string {
+	s := strconv.Itoa(n)
+	for i := len(s) - 3; i > 0; i -= 3 {
+		s = s[:i] + "," + s[i:]
+	}
+	return s
+}
+
+func truncateDuration(d time.Duration) string {
+	const maxDecimals = 3
+	s := d.String()
+	dot := strings.IndexByte(s, '.')
+	if dot == -1 {
+		return s
+	}
+	end := dot + 1
+	for end < len(s) && s[end] >= '0' && s[end] <= '9' {
+		end++
+	}
+	decimals := end - (dot + 1)
+	if decimals <= maxDecimals {
+		return s
+	}
+	return s[:dot+1+maxDecimals] + s[end:]
 }

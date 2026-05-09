@@ -2,7 +2,6 @@ package main
 
 import (
 	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
 	"fmt"
 	"gowordladder/generator"
 	"gowordladder/words"
@@ -33,17 +32,21 @@ type viewPlay struct {
 }
 
 const (
-	headerLines = 2
-	footerLines = 3
+	playHeaderLines = 2
+	playFooterLines = 3
 )
 
 func (v *viewPlay) content(m *model) (string, *tea.Cursor) {
 	var sb strings.Builder
-	sb.WriteString(v.fitHeader(m))
-	lines := headerLines
+	sb.WriteString(headerStyle.Width(m.width).Render(center3(
+		m.width,
+		fmt.Sprintf(" Solutions: %d ", len(v.puzzle.Solutions)),
+		fmt.Sprintf("Current score: %.0f", v.currentScore),
+		fmt.Sprintf(" Max score: %.0f ", v.puzzle.MaxScore))))
+	lines := playHeaderLines
 
 	var csr *tea.Cursor
-	maxLines := m.height - lines - footerLines
+	maxLines := m.height - lines - playFooterLines
 	padL := strings.Repeat(" ", ((m.width-v.puzzle.WordLength+2)/2)-3)
 	stop := false
 	for l := 0; !stop && l < maxLines; l++ {
@@ -76,7 +79,7 @@ func (v *viewPlay) content(m *model) (string, *tea.Cursor) {
 		case rung < v.puzzle.LadderLength:
 			if rung == v.onStep {
 				csr = tea.NewCursor(len(padL)+4+v.onChar, lines-1)
-				csr.Color = lipgloss.Color("#ccccff")
+				csr.Color = playCursorColor
 			}
 			sb.WriteString(helpStyle.Render(fmt.Sprintf("%2d ", rung+2)))
 			sb.WriteString(helpStyle.Render(vertical))
@@ -91,16 +94,8 @@ func (v *viewPlay) content(m *model) (string, *tea.Cursor) {
 		}
 	}
 
-	sb.WriteString(padLines(m.height - lines - headerLines))
+	sb.WriteString(padLines(m.height - lines - playHeaderLines))
 	return sb.String(), csr
-}
-
-func (v *viewPlay) fitHeader(m *model) string {
-	return headerStyle.Width(m.width).Render(center3(
-		m.width,
-		fmt.Sprintf(" Solutions: %d ", len(v.puzzle.Solutions)),
-		fmt.Sprintf("Current score: %.0f", v.currentScore),
-		fmt.Sprintf(" Max score: %.0f ", v.puzzle.MaxScore)))
 }
 
 func (v *viewPlay) help() string {
@@ -124,12 +119,6 @@ func (v *viewPlay) help() string {
 	}
 }
 
-var (
-	hintStyle    = lipgloss.NewStyle().Italic(true).Foreground(lipgloss.Color("#008000"))
-	warningStyle = lipgloss.NewStyle().Italic(true).Foreground(lipgloss.Color("#ff7f00"))
-	wrongStyle   = lipgloss.NewStyle().Italic(true).Foreground(lipgloss.Color("#ff0000"))
-)
-
 func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	v.hint = ""
 	v.warning = ""
@@ -147,25 +136,12 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 			v.onStep--
 			v.ensureCursorVisible(m)
 		}
-	case "shift+tab":
-		if !v.solved {
-			v.checkWord(m)
-			if v.wrong == "" && v.warning == "" && v.onStep > 0 {
-				v.onStep--
-				v.onChar = 0
-				v.ensureCursorVisible(m)
-			}
-		} else if v.onStep < len(v.entries)-1 {
-			v.onStep++
-			v.onChar = 0
-			v.ensureCursorVisible(m)
-		}
 	case down:
 		if v.onStep < len(v.entries)-1 {
 			v.onStep++
 			v.ensureCursorVisible(m)
 		}
-	case enter, "tab":
+	case enter, tab:
 		if !v.solved {
 			v.checkWord(m)
 			if v.wrong == "" && v.warning == "" && v.onStep < len(v.entries)-1 {
@@ -176,6 +152,19 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 		} else if v.onStep < len(v.entries)-1 {
 			v.onChar = 0
 			v.onStep++
+			v.ensureCursorVisible(m)
+		}
+	case shiftTab:
+		if !v.solved {
+			v.checkWord(m)
+			if v.wrong == "" && v.warning == "" && v.onStep > 0 {
+				v.onStep--
+				v.onChar = 0
+				v.ensureCursorVisible(m)
+			}
+		} else if v.onStep < len(v.entries)-1 {
+			v.onStep++
+			v.onChar = 0
 			v.ensureCursorVisible(m)
 		}
 	case left:
@@ -237,20 +226,20 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 }
 
 func (v *viewPlay) ensureCursorVisible(m *model) {
-	maxLines := m.height - headerLines - footerLines
-	visibleL := v.onStep - v.offsetY + headerLines
+	maxLines := m.height - playHeaderLines - playFooterLines
+	visibleL := v.onStep - v.offsetY + playHeaderLines
 	if visibleL < 0 {
-		v.offsetY = v.onStep + headerLines
+		v.offsetY = v.onStep + playHeaderLines
 		// if we're close enough to the top, snap so that first word is visible...
 		if v.offsetY < 3 {
 			v.offsetY = 0
 		}
 	} else if visibleL >= maxLines {
-		v.offsetY = v.onStep + headerLines - maxLines + 1
+		v.offsetY = v.onStep + playHeaderLines - maxLines + 1
 		lastRung := v.puzzle.LadderLength - 1
-		maxOffsetY := lastRung + footerLines - maxLines
+		maxOffsetY := lastRung + playFooterLines - maxLines
 		// if we're close enough to the bottom, snap so the final word is visible...
-		if maxOffsetY-v.offsetY < footerLines {
+		if maxOffsetY-v.offsetY < playFooterLines {
 			v.offsetY = maxOffsetY
 		}
 	}
@@ -374,16 +363,6 @@ func (v *viewPlay) nextWord(incEnd bool) *words.Word {
 		return v.puzzle.EndWord
 	}
 	return nil
-}
-
-func isAllAZ(s string) bool {
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if c < 'A' || c > 'Z' {
-			return false
-		}
-	}
-	return true
 }
 
 func (v *viewPlay) fillWord(m *model) {

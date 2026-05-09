@@ -64,7 +64,7 @@ func (h helpData) render(width int) []string {
 	result := make([]string, 0, len(h)*10)
 	for i := 0; i < len(h); i++ {
 		if i > 0 {
-			result = append(result, "")
+			result = append(result, " "+helpStyle.Render(strings.Repeat(topBottom, width-2)))
 		}
 		item := h[i]
 		result = append(result, item.header.render(width))
@@ -146,7 +146,7 @@ var helpText = helpData{
 	{
 		"Play Screen",
 		[]helpLine{
-			{text("Use keys "), key("↑"), text(","), key("↓"), text(","), key("←"), text(","), key("→"), text(","), key(enter), text(","), key("tab"), text(" & "), key("shift+tab"), text(" to navigate around the word ladder.  Use"), key(" space"), text(" to clear the current rung.")},
+			{text("Use keys "), key("↑"), text(","), key("↓"), text(","), key("←"), text(","), key("→"), text(","), key(enter), text(","), key(tab), text(" & "), key(shiftTab), text(" to navigate around the word ladder.  Use"), key(" space"), text(" to clear the current rung.")},
 			{},
 			{text("Hint keys:")},
 			{key(ctrlHelp), text(" - to show all possible solutions.")},
@@ -174,6 +174,15 @@ var helpText = helpData{
 			{},
 			{text("Enter the start and end word of the puzzle. Then enter the maximum ladder length - if this is left blank, the app automatically calculate the minimum ladder length.")},
 			{text("Once the puzzle has been successfully solved, press"), key(" " + ctrlPlay), text(" to play the puzzle. You can also press"), key(" enter"), text(" to show all possible solutions.")},
+		},
+	},
+	{
+		"Solutions Screen",
+		[]helpLine{
+			{text("Use this screen to see all the solutions for the current puzzle.")},
+			{text("This screen can be reached from the Play, Solver and Generate screens.")},
+			{},
+			{text("Each solution ladder is shown as a column, each rung shows the letter that was changed.")},
 		},
 	},
 	{

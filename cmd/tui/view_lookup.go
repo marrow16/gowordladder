@@ -2,7 +2,6 @@ package main
 
 import (
 	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
 	"encoding/json"
 	"fmt"
 	"gowordladder/words"
@@ -112,6 +111,12 @@ func (v *viewLookup) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 		v.variationsResult = nil
 	}
 	return nil
+}
+
+func (v *viewLookup) paste(m *model, msg tea.PasteMsg) {
+	if v.input != nil {
+		v.input.paste(msg)
+	}
 }
 
 type lookupResult struct {
@@ -233,8 +238,6 @@ func (r *dictionaryResponse) normalize() {
 	}
 	r.Entries = newEntries
 }
-
-var boldStyle = lipgloss.NewStyle().Bold(true)
 
 func (r *dictionaryResponse) buildLines(width int) []string {
 	result := make([]string, 0)

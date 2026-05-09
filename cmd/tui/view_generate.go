@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gowordladder/generator"
 	"gowordladder/words"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -45,6 +46,8 @@ func (v *viewGenerate) wordLength() int {
 func (v *viewGenerate) currentWord() string {
 	if (v.step == generateStartWord || v.step == generateEndWord) && v.currentInput != nil {
 		return v.currentInput.value()
+	} else if v.puzzle != nil {
+		return v.puzzle.StartWord.String()
 	}
 	return ""
 }
@@ -166,9 +169,9 @@ func (v *viewGenerate) content(m *model) (string, *tea.Cursor) {
 			sb.WriteString(errorStyle.Render("\n\n  " + v.currentError))
 			lines += 2
 		} else {
-			sb.WriteString("\n\n  Took " + highlightStyle.Render(v.puzzleGenerateTime.String()) + " to generate puzzle")
+			sb.WriteString("\n\n  Took " + highlightStyle.Render(truncateDuration(v.puzzleGenerateTime)) + " to generate puzzle")
 			sb.WriteString("\n  Max score: " + highlightStyle.Render(fmt.Sprintf("%.0f", v.puzzle.MaxScore)))
-			sb.WriteString(", " + highlightStyle.Render(fmt.Sprintf("%d", len(v.puzzle.Solutions))) + " solutions")
+			sb.WriteString(", " + highlightStyle.Render(commas(len(v.puzzle.Solutions))) + " solutions")
 			lines += 3
 		}
 	}
@@ -222,6 +225,20 @@ func (v *viewGenerate) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 				return nil
 			}
 		}
+	case up:
+		switch v.step {
+		case generateStartWord:
+			return v.scrollStartWord(m, -1)
+		case generateEndWord:
+			return v.scrollEndWord(m, -1)
+		}
+	case down:
+		switch v.step {
+		case generateStartWord:
+			return v.scrollStartWord(m, 1)
+		case generateEndWord:
+			return v.scrollEndWord(m, 1)
+		}
 	case "?":
 		switch v.step {
 		case generateStartWord:
@@ -234,6 +251,12 @@ func (v *viewGenerate) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 		v.currentInput.key(msg)
 	}
 	return nil
+}
+
+func (v *viewGenerate) paste(m *model, msg tea.PasteMsg) {
+	if v.currentInput != nil {
+		v.currentInput.paste(msg)
+	}
 }
 
 type generateEnterResult struct {
@@ -409,6 +432,71 @@ func (v *viewGenerate) randomEndWord(m *model) tea.Cmd {
 			return generateEnterResult{err: "Unable to generate random word (try again)"}
 		} else {
 			word := candidates[rng.Intn(len(candidates))]
+			return generateEnterResult{
+				nextStep: generateEndWord,
+				update: func(v *viewGenerate) {
+					v.currentInput.set(strings.ToUpper(word))
+				},
+			}
+		}
+	}
+}
+
+func findWordIndex(words []*words.Word, word string) int {
+	for i, w := range words {
+		if w.String() == word {
+			return i
+		}
+	}
+	return -1
+}
+
+func (v *viewGenerate) scrollStartWord(m *model, scroll int) tea.Cmd {
+	v.currentError = ""
+	return func() tea.Msg {
+		dict := m.loadDictionary(v.wordLen)
+		candidates := dict.WordsWithSteps(v.ladderLen)
+		var word *words.Word
+		if cw := v.currentInput.value(); len(cw) != v.wordLen {
+			word = candidates[0]
+		} else {
+			idx := findWordIndex(candidates, cw) + scroll
+			if idx < 0 {
+				idx = len(candidates) - 1
+			} else if idx >= len(candidates) {
+				idx = 0
+			}
+			word = candidates[idx]
+		}
+		return generateEnterResult{
+			nextStep: generateStartWord,
+			update: func(v *viewGenerate) {
+				v.currentInput.set(strings.ToUpper(word.String()))
+			},
+		}
+	}
+}
+
+func (v *viewGenerate) scrollEndWord(m *model, scroll int) tea.Cmd {
+	v.currentError = ""
+	return func() tea.Msg {
+		wdm := words.NewWordDistanceMap(v.startWord, &v.ladderLen)
+		candidates := wdm.WordsAt(v.ladderLen)
+		if len(candidates) == 0 {
+			return generateEnterResult{err: "Unable to generate random word (try again)"}
+		} else {
+			word := ""
+			if cw := v.currentInput.value(); len(cw) != v.wordLen {
+				word = candidates[0]
+			} else {
+				idx := slices.Index(candidates, v.currentInput.value()) + scroll
+				if idx < 0 {
+					idx = len(candidates) - 1
+				} else if idx >= len(candidates) {
+					idx = 0
+				}
+				word = candidates[idx]
+			}
 			return generateEnterResult{
 				nextStep: generateEndWord,
 				update: func(v *viewGenerate) {

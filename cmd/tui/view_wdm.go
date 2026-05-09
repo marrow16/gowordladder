@@ -15,6 +15,7 @@ type viewWordDistances struct {
 	offsetY, offsetX int
 	input            input
 	distancesResult  *distancesResult
+	wordsDisplayed   map[string]string
 }
 
 func (v *viewWordDistances) content(m *model) (string, *tea.Cursor) {
@@ -22,6 +23,7 @@ func (v *viewWordDistances) content(m *model) (string, *tea.Cursor) {
 		prompt      = " Word: "
 		footerLines = 2
 	)
+	v.wordsDisplayed = map[string]string{}
 	var sb strings.Builder
 	sb.WriteString("\n" + prompt)
 	s, cxp := v.input.render()
@@ -34,7 +36,7 @@ func (v *viewWordDistances) content(m *model) (string, *tea.Cursor) {
 			sb.WriteString(" " + errorStyle.Render("Word not in my dictionary") + "\n")
 			lines++
 		} else {
-			sb.WriteString(fmt.Sprintf(" Max ladder length: %d  Max words: %d (@%d)\n", v.distancesResult.maxLadderLength, v.distancesResult.maxWords, v.distancesResult.maxWordsAt))
+			sb.WriteString(" " + boldStyle.Render(v.distancesResult.word) + fmt.Sprintf(" Max ladder length: %d  Max words: %d (@%d)\n", v.distancesResult.maxLadderLength, v.distancesResult.maxWords, v.distancesResult.maxWordsAt))
 			lines++
 			colWd := v.distancesResult.wordLength + 2
 			colWd += 2
@@ -79,6 +81,9 @@ func (v *viewWordDistances) content(m *model) (string, *tea.Cursor) {
 						sb.WriteString(helpStyle.Render(vertical))
 						sb.WriteString(wds[wn])
 						sb.WriteString(helpStyle.Render(vertical))
+						for sp := 0; sp < v.distancesResult.wordLength; sp++ {
+							v.wordsDisplayed[strconv.Itoa(lines)+":"+strconv.Itoa(wd+2+sp)] = wds[wn]
+						}
 					case wn == len(wds):
 						sb.WriteString(helpStyle.Render(bottomLeft + strings.Repeat(topBottom, v.distancesResult.wordLength) + bottomRight))
 					default:
@@ -150,15 +155,28 @@ func (v *viewWordDistances) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 		}
 	case enter:
 		return v.doLookup()
+	default:
+		v.input.key(msg)
 	}
-	if v.input.key(msg) {
-		v.distancesResult = nil
+	return nil
+}
+
+func (v *viewWordDistances) paste(m *model, msg tea.PasteMsg) {
+	if v.input != nil {
+		v.input.paste(msg)
+	}
+}
+
+func (v *viewWordDistances) click(m *model, msg tea.Mouse) tea.Cmd {
+	if wd, ok := v.wordsDisplayed[strconv.Itoa(msg.Y)+":"+strconv.Itoa(msg.X)]; ok {
+		return v.doLookupWord(wd)
 	}
 	return nil
 }
 
 func (v *viewWordDistances) update(m *model, msg tea.Msg) tea.Cmd {
 	if dr, ok := msg.(distancesResult); ok {
+		v.input.set(dr.word)
 		v.distancesResult = &dr
 	}
 	return nil
@@ -179,6 +197,9 @@ func (v *viewWordDistances) currentWord() string {
 }
 
 func (v *viewWordDistances) lookupWord(word string, backMode mode, backView view) tea.Cmd {
+	if v.distancesResult != nil && v.distancesResult.word == word {
+		return nil
+	}
 	v.offsetY = 0
 	v.offsetX = 0
 	v.distancesResult = nil
@@ -189,6 +210,7 @@ func (v *viewWordDistances) lookupWord(word string, backMode mode, backView view
 }
 
 type distancesResult struct {
+	word            string
 	inDictionary    bool
 	wordLength      int
 	maxLadderLength int
@@ -198,7 +220,54 @@ type distancesResult struct {
 }
 
 func (v *viewWordDistances) doLookup() tea.Cmd {
-	s := v.input.value()
+	return v.doLookupWord(v.input.value())
+	/*
+		s := v.input.value()
+		if l := len(s); l >= 2 {
+			v.distancesResult = nil
+			v.offsetX = 0
+			v.offsetY = 0
+			return func() tea.Msg {
+				dict := words.NewDictionary(l)
+				if wd, ok := dict.Word(s); ok {
+					wdm := words.NewWordDistanceMap(wd, nil)
+					d1 := make(map[int][]string, len(wdm))
+					for w, dist := range wdm {
+						if dist > 0 {
+							d1[dist] = append(d1[dist], w)
+						}
+					}
+					result := make(map[int][]string, len(d1))
+					maxWords := 0
+					maxWordsAt := 0
+					for d, sl := range d1 {
+						slices.Sort(sl)
+						result[d] = sl
+						if nw := len(sl); nw > maxWords {
+							maxWords = nw
+							maxWordsAt = d
+						}
+					}
+					return distancesResult{
+						word:            s,
+						inDictionary:    true,
+						wordLength:      l,
+						maxLadderLength: wd.MaxSteps(),
+						maxWords:        maxWords,
+						maxWordsAt:      maxWordsAt,
+						distances:       result,
+					}
+				} else {
+					return distancesResult{word: s, inDictionary: false}
+				}
+			}
+		}
+		return nil
+
+	*/
+}
+
+func (v *viewWordDistances) doLookupWord(s string) tea.Cmd {
 	if l := len(s); l >= 2 {
 		v.distancesResult = nil
 		v.offsetX = 0
@@ -225,6 +294,7 @@ func (v *viewWordDistances) doLookup() tea.Cmd {
 					}
 				}
 				return distancesResult{
+					word:            s,
 					inDictionary:    true,
 					wordLength:      l,
 					maxLadderLength: wd.MaxSteps(),
@@ -233,7 +303,7 @@ func (v *viewWordDistances) doLookup() tea.Cmd {
 					distances:       result,
 				}
 			} else {
-				return distancesResult{inDictionary: false}
+				return distancesResult{word: s, inDictionary: false}
 			}
 		}
 	}

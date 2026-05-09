@@ -153,13 +153,19 @@ func (v *viewSolutions) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 			v.offsetY = 0
 		}
 	case down:
-		if v.offsetY < v.maxLadderLen && (v.offsetY+m.height) < (v.maxLadderLen+5) {
+		maxOffsetY := v.maxLadderLen + 5 - m.height
+		if maxOffsetY < 0 {
+			maxOffsetY = 0
+		} else if v.offsetY < maxOffsetY {
 			v.offsetY++
 		}
 	case pageDown:
 		v.offsetY += m.height
-		if (v.offsetY + m.height) >= (v.maxLadderLen + 5) {
-			v.offsetY = (v.maxLadderLen - m.height) + 5
+		maxOffsetY := v.maxLadderLen + 5 - m.height
+		if maxOffsetY < 0 {
+			maxOffsetY = 0
+		} else if v.offsetY > maxOffsetY {
+			v.offsetY = maxOffsetY
 		}
 	case left:
 		if !v.showingAnalysis {
@@ -262,20 +268,22 @@ func (v *viewSolutions) setSolutions(solutions []*solving.Solution, backMode mod
 }
 
 func sortSolutions(solutions []*solving.Solution) {
-	sort.Slice(solutions, func(i, j int) bool {
-		if len(solutions[i].Ladder()) < len(solutions[j].Ladder()) {
-			return true
-		} else if len(solutions[i].Ladder()) == len(solutions[j].Ladder()) {
-			for idx, w := range solutions[i].Ladder() {
-				if w.String() < solutions[j].Ladder()[idx].String() {
-					return true
-				} else if w.String() > solutions[j].Ladder()[idx].String() {
-					return false
+	if len(solutions) < 500_000 {
+		sort.Slice(solutions, func(i, j int) bool {
+			if len(solutions[i].Ladder()) < len(solutions[j].Ladder()) {
+				return true
+			} else if len(solutions[i].Ladder()) == len(solutions[j].Ladder()) {
+				for idx, w := range solutions[i].Ladder() {
+					if w.String() < solutions[j].Ladder()[idx].String() {
+						return true
+					} else if w.String() > solutions[j].Ladder()[idx].String() {
+						return false
+					}
 				}
 			}
-		}
-		return false
-	})
+			return false
+		})
+	}
 }
 
 var letterStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000"))

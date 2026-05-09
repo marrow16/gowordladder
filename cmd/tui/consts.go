@@ -15,6 +15,8 @@ const (
 // common keys
 const (
 	enter          = "enter"
+	tab            = "tab"
+	shiftTab       = "shift+tab"
 	back           = "ctrl+b"
 	backspace      = "backspace"
 	up             = "up"
@@ -53,4 +55,12 @@ var (
 	errorStyle = lipgloss.NewStyle().
 			Italic(true).
 			Foreground(lipgloss.Color("#ff0000"))
+	inputStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#ffffff")).
+			Background(lipgloss.Color("#0000ff"))
+	boldStyle       = lipgloss.NewStyle().Bold(true)
+	playCursorColor = lipgloss.Color("#ccccff")
+	hintStyle       = lipgloss.NewStyle().Italic(true).Foreground(lipgloss.Color("#008000"))
+	warningStyle    = lipgloss.NewStyle().Italic(true).Foreground(lipgloss.Color("#ff7f00"))
+	wrongStyle      = lipgloss.NewStyle().Italic(true).Foreground(lipgloss.Color("#ff0000"))
 )

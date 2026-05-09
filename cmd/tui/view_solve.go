@@ -34,6 +34,7 @@ type viewSolve struct {
 	minLengthCalcTime  time.Duration
 	solutions          []*solving.Solution
 	solveTime          time.Duration
+	explored           int
 }
 
 func (v *viewSolve) wordLength() int {
@@ -46,6 +47,8 @@ func (v *viewSolve) wordLength() int {
 func (v *viewSolve) currentWord() string {
 	if (v.step == solveStartWord || v.step == solveEndWord) && v.currentInput != nil {
 		return v.currentInput.value()
+	} else if v.step == solveSolved {
+		return v.startWord.String()
 	}
 	return ""
 }
@@ -118,13 +121,13 @@ func (v *viewSolve) content(m *model) (string, *tea.Cursor) {
 		} else {
 			sb.WriteString(inputStyle.Width(2).Render(fmt.Sprintf("%2d", v.ladderLength)))
 		}
-		sb.WriteString("\n\n Took " + highlightStyle.Render(v.dictionaryLoadTime.String()) + " to load dictionary")
+		sb.WriteString("\n\n Took " + highlightStyle.Render(truncateDuration(v.dictionaryLoadTime)) + " to load dictionary")
 		lines += 5
 		if v.ladderLength == -1 {
-			sb.WriteString("\n Took " + highlightStyle.Render(v.minLengthCalcTime.String()) + " to determine min ladder length " + highlightStyle.Render(strconv.Itoa(v.minLadderLength)))
+			sb.WriteString("\n Took " + highlightStyle.Render(truncateDuration(v.minLengthCalcTime)) + " to determine minimum ladder length " + highlightStyle.Render(strconv.Itoa(v.minLadderLength)))
 			lines++
 		}
-		sb.WriteString("\n Took " + highlightStyle.Render(v.solveTime.String()) + " to find " + highlightStyle.Render(strconv.Itoa(len(v.solutions))) + " solutions")
+		sb.WriteString("\n Took " + highlightStyle.Render(truncateDuration(v.solveTime)) + " to find " + highlightStyle.Render(commas(len(v.solutions))) + " solutions (explored " + highlightStyle.Render(commas(v.explored)) + ")")
 		lines++
 	}
 
@@ -186,6 +189,12 @@ func (v *viewSolve) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 		v.currentInput.key(msg)
 	}
 	return nil
+}
+
+func (v *viewSolve) paste(m *model, msg tea.PasteMsg) {
+	if v.currentInput != nil {
+		v.currentInput.paste(msg)
+	}
 }
 
 type solveEnterResult struct {
@@ -297,6 +306,7 @@ func (v *viewSolve) enterMaxLadder(m *model) tea.Cmd {
 						v.ladderLength = -1
 						v.solutions = solutions
 						v.solveTime = solveTime
+						v.explored = solver.ExploredCount()
 					},
 				}
 			}
@@ -312,6 +322,7 @@ func (v *viewSolve) enterMaxLadder(m *model) tea.Cmd {
 					v.ladderLength = n
 					v.solutions = solutions
 					v.solveTime = solveTime
+					v.explored = solver.ExploredCount()
 				},
 			}
 		} else {

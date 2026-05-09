@@ -1,10 +1,9 @@
 package main
 
 import (
+	tea "charm.land/bubbletea/v2"
 	"fmt"
 	"os"
-
-	tea "charm.land/bubbletea/v2"
 )
 
 func main() {
