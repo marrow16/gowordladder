@@ -5,6 +5,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"fmt"
 	"gowordladder/solving"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -26,12 +27,14 @@ type viewSolutions struct {
 	solutions        []*solving.Solution
 	showingAnalysis  bool
 	analysis         []map[string]struct{}
+	wordsDisplayed   wordPoints
 }
 
 func (v *viewSolutions) content(m *model) (string, *tea.Cursor) {
 	const (
 		footerLines = 2
 	)
+	v.wordsDisplayed = make(wordPoints)
 	var sb strings.Builder
 	lines := 1
 	if !v.showingAnalysis {
@@ -66,11 +69,13 @@ func (v *viewSolutions) content(m *model) (string, *tea.Cursor) {
 			for s := 0; s < numSolutions && (s+v.offsetX) < len(v.solutions); s++ {
 				solution := v.solutions[s+v.offsetX]
 				ladder := solution.Ladder()
+				x := 4 + (s * v.solutionWidth)
 				if row == 0 {
 					sb.WriteString(helpStyle.Render(vertical))
 					sb.WriteString(ladder[row].String())
 					sb.WriteString(helpStyle.Render(vertical))
 					sb.WriteString(strings.Repeat(" ", v.solutionWidth-v.wordLen-2))
+					v.wordsDisplayed.addWord(ladder[row].String(), lines-1, x)
 				} else if row < len(ladder) {
 					sb.WriteString(helpStyle.Render(vertical))
 					prev := []rune(ladder[row-1].String())
@@ -84,6 +89,7 @@ func (v *viewSolutions) content(m *model) (string, *tea.Cursor) {
 					}
 					sb.WriteString(helpStyle.Render(vertical))
 					sb.WriteString(strings.Repeat(" ", v.solutionWidth-v.wordLen-2))
+					v.wordsDisplayed.addWord(ladder[row].String(), lines-1, x)
 				} else if row == len(ladder) {
 					sb.WriteString(helpStyle.Render(bottomLeft))
 					sb.WriteString(helpStyle.Render(strings.Repeat(topBottom, v.wordLen)))
@@ -143,6 +149,8 @@ func (v *viewSolutions) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 		if !v.showingAnalysis && len(v.solutions) > 1 {
 			return v.analyse()
 		}
+	case ctrlExport:
+		go v.export()
 	case up:
 		if v.offsetY > 0 {
 			v.offsetY--
@@ -205,6 +213,13 @@ func (v *viewSolutions) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	return nil
 }
 
+func (v *viewSolutions) click(m *model, msg tea.Mouse) tea.Cmd {
+	if wd, ok := v.wordsDisplayed[pt{msg.Y, msg.X}]; ok {
+		return m.lookupWord(wd)
+	}
+	return nil
+}
+
 func (v *viewSolutions) analyse() tea.Cmd {
 	return func() tea.Msg {
 		analysis := make([]map[string]struct{}, v.maxLadderLen)
@@ -219,6 +234,25 @@ func (v *viewSolutions) analyse() tea.Cmd {
 			}
 		}
 		return analysisResult{analysis: analysis}
+	}
+}
+
+func (v *viewSolutions) export() {
+	if len(v.solutions) > 0 {
+		ladder := v.solutions[0].Ladder()
+		fn := fmt.Sprintf("solutions-%s-%s.csv", ladder[0], ladder[len(ladder)-1])
+		if f, err := os.Create(fn); err == nil {
+			defer f.Close()
+			for i, solution := range v.solutions {
+				ladder = solution.Ladder()
+				_, _ = fmt.Fprintf(f, "%d,%d", i+1, len(ladder))
+				for _, w := range ladder {
+					_, _ = fmt.Fprint(f, ",")
+					_, _ = fmt.Fprint(f, w.String())
+				}
+				_, _ = f.WriteString("\n")
+			}
+		}
 	}
 }
 

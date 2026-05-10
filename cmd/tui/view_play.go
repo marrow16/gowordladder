@@ -29,6 +29,8 @@ type viewPlay struct {
 	wrong          string
 	okWords        map[int]bool
 	solved         bool
+	wordsDisplayed wordPoints
+	mousePositions map[int][2]int
 }
 
 const (
@@ -37,6 +39,8 @@ const (
 )
 
 func (v *viewPlay) content(m *model) (string, *tea.Cursor) {
+	v.wordsDisplayed = make(wordPoints)
+	v.mousePositions = make(map[int][2]int)
 	var sb strings.Builder
 	sb.WriteString(headerStyle.Width(m.width).Render(center3(
 		m.width,
@@ -48,6 +52,7 @@ func (v *viewPlay) content(m *model) (string, *tea.Cursor) {
 	var csr *tea.Cursor
 	maxLines := m.height - lines - playFooterLines
 	padL := strings.Repeat(" ", ((m.width-v.puzzle.WordLength+2)/2)-3)
+	x := len(padL) + 4
 	stop := false
 	for l := 0; !stop && l < maxLines; l++ {
 		sb.WriteString("\n")
@@ -65,6 +70,7 @@ func (v *viewPlay) content(m *model) (string, *tea.Cursor) {
 				sb.WriteString(v.puzzle.StartWord.String())
 			}
 			sb.WriteString(helpStyle.Render(vertical))
+			v.wordsDisplayed.addWord(v.puzzle.StartWord.String(), lines-1, x)
 		case rung == v.puzzle.LadderLength-2:
 			sb.WriteString(helpStyle.Render(fmt.Sprintf("%2d ", v.puzzle.LadderLength)))
 			sb.WriteString(helpStyle.Render(vertical))
@@ -74,6 +80,7 @@ func (v *viewPlay) content(m *model) (string, *tea.Cursor) {
 				sb.WriteString(v.puzzle.EndWord.String())
 			}
 			sb.WriteString(helpStyle.Render(vertical))
+			v.wordsDisplayed.addWord(v.puzzle.EndWord.String(), lines-1, x)
 		case rung == v.puzzle.LadderLength-1:
 			sb.WriteString(helpStyle.Render("   " + bottomLeft + strings.Repeat(topBottom, v.puzzle.WordLength) + bottomRight))
 		case rung < v.puzzle.LadderLength:
@@ -83,10 +90,15 @@ func (v *viewPlay) content(m *model) (string, *tea.Cursor) {
 			}
 			sb.WriteString(helpStyle.Render(fmt.Sprintf("%2d ", rung+2)))
 			sb.WriteString(helpStyle.Render(vertical))
-			if v.solved || v.okWords[rung] {
+			if v.solved {
 				sb.WriteString(highlightStyle.Render(v.entries[rung]))
+				v.wordsDisplayed.addWord(v.entries[rung], lines-1, x)
+			} else if v.okWords[rung] {
+				sb.WriteString(highlightStyle.Render(v.entries[rung]))
+				v.mousePositions[lines-1] = [2]int{rung, x}
 			} else {
 				sb.WriteString(v.entries[rung])
+				v.mousePositions[lines-1] = [2]int{rung, x}
 			}
 			sb.WriteString(helpStyle.Render(vertical))
 		default:
@@ -220,6 +232,25 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 				}
 				v.checkWord(m)
 			}
+		}
+	}
+	return nil
+}
+
+func (v *viewPlay) click(m *model, msg tea.Mouse) tea.Cmd {
+	if wd, ok := v.wordsDisplayed[pt{msg.Y, msg.X}]; ok {
+		return m.lookupWord(wd)
+	}
+	if mp, ok := v.mousePositions[msg.Y]; ok {
+		return func() tea.Msg {
+			v.onStep = mp[0]
+			v.onChar = msg.X - mp[1]
+			if v.onChar < 0 {
+				v.onChar = 0
+			} else if v.onChar >= v.puzzle.WordLength {
+				v.onChar = v.puzzle.WordLength - 1
+			}
+			return nil
 		}
 	}
 	return nil

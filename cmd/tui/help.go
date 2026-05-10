@@ -141,6 +141,8 @@ var helpText = helpData{
 			{key(ctrlSolver), text(" - to navigate to Solver Screen.")},
 			{key(ctrlDistances), text(" - to display distances from a word.")},
 			{key(exit + "   "), text(" - to exit the app.")},
+			{},
+			{text("Lookup word meaning can also be displayed by mouse clicking on a displayed word.")},
 		},
 	},
 	{
@@ -183,6 +185,8 @@ var helpText = helpData{
 			{text("This screen can be reached from the Play, Solver and Generate screens.")},
 			{},
 			{text("Each solution ladder is shown as a column, each rung shows the letter that was changed.")},
+			{},
+			{text("Press"), key(" " + ctrlExport), text(" to export the current solutions to a CSV file.")},
 		},
 	},
 	{

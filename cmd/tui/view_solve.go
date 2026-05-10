@@ -21,20 +21,19 @@ const (
 )
 
 type viewSolve struct {
-	step         solveStep
-	startWord    *words.Word
-	endWord      *words.Word
-	ladderLength int
-
-	currentInput input
-	currentError string
-
+	step               solveStep
+	startWord          *words.Word
+	endWord            *words.Word
+	ladderLength       int
+	currentInput       input
+	currentError       string
 	dictionaryLoadTime time.Duration
 	minLadderLength    int
 	minLengthCalcTime  time.Duration
 	solutions          []*solving.Solution
 	solveTime          time.Duration
 	explored           int
+	wordsDisplayed     wordPoints
 }
 
 func (v *viewSolve) wordLength() int {
@@ -61,6 +60,7 @@ func (v *viewSolve) content(m *model) (string, *tea.Cursor) {
 		promptLen       = len(promptMaxLadder)
 		footerLines     = 3
 	)
+	v.wordsDisplayed = make(wordPoints)
 	var sb strings.Builder
 	sb.WriteString("\n")
 	lines := 1
@@ -81,6 +81,7 @@ func (v *viewSolve) content(m *model) (string, *tea.Cursor) {
 	case solveEndWord:
 		sb.WriteString(promptStartWord)
 		sb.WriteString(inputStyle.Width(15).Render(v.startWord.String()))
+		v.wordsDisplayed.addWord(v.startWord.String(), 2, promptLen)
 		sb.WriteString("\n" + promptEndWord)
 		if v.currentInput == nil {
 			v.currentInput = &wordInput{maxLength: 15}
@@ -96,8 +97,10 @@ func (v *viewSolve) content(m *model) (string, *tea.Cursor) {
 	case solveMaxLadder:
 		sb.WriteString(promptStartWord)
 		sb.WriteString(inputStyle.Width(15).Render(v.startWord.String()))
+		v.wordsDisplayed.addWord(v.startWord.String(), 2, promptLen)
 		sb.WriteString("\n" + promptEndWord)
 		sb.WriteString(inputStyle.Width(15).Render(v.endWord.String()))
+		v.wordsDisplayed.addWord(v.endWord.String(), 3, promptLen)
 		sb.WriteString("\n" + promptMaxLadder)
 		if v.currentInput == nil {
 			v.currentInput = &numberInput{maxLength: 2}
@@ -113,8 +116,10 @@ func (v *viewSolve) content(m *model) (string, *tea.Cursor) {
 	case solveSolved:
 		sb.WriteString(promptStartWord)
 		sb.WriteString(inputStyle.Width(15).Render(v.startWord.String()))
+		v.wordsDisplayed.addWord(v.startWord.String(), 2, promptLen)
 		sb.WriteString("\n" + promptEndWord)
 		sb.WriteString(inputStyle.Width(15).Render(v.endWord.String()))
+		v.wordsDisplayed.addWord(v.endWord.String(), 3, promptLen)
 		sb.WriteString("\n" + promptMaxLadder)
 		if v.ladderLength == -1 {
 			sb.WriteString(inputStyle.Width(2).Render("??"))
@@ -187,6 +192,13 @@ func (v *viewSolve) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	}
 	if v.currentInput != nil {
 		v.currentInput.key(msg)
+	}
+	return nil
+}
+
+func (v *viewSolve) click(m *model, msg tea.Mouse) tea.Cmd {
+	if wd, ok := v.wordsDisplayed[pt{msg.Y, msg.X}]; ok {
+		return m.lookupWord(wd)
 	}
 	return nil
 }

@@ -305,6 +305,26 @@ func (m *model) restoreView(rm mode, rv view) {
 	m.mode = rm
 }
 
+func (m *model) lookupWord(word string) tea.Cmd {
+	if m.mode != lookup {
+		cmd := m.viewLookup.lookupWord(word, m.mode, m.currentView)
+		m.mode = lookup
+		m.currentView = m.viewLookup
+		return cmd
+	}
+	return nil
+}
+
+func (m *model) distanceWord(word string) tea.Cmd {
+	if m.mode != distances {
+		cmd := m.viewDistances.lookupWord(word, m.mode, m.currentView)
+		m.mode = distances
+		m.currentView = m.viewDistances
+		return cmd
+	}
+	return nil
+}
+
 func center3(wd int, left, mid, right string) string {
 	ll, lm, lr := len(left), len(mid), len(right)
 	lmw := lm / 2

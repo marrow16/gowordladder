@@ -22,18 +22,17 @@ const (
 )
 
 type viewGenerate struct {
-	step      generateStep
-	wordLen   int
-	ladderLen int
-	startWord *words.Word
-	endWord   *words.Word
-
+	step                     generateStep
+	wordLen                  int
+	ladderLen                int
+	startWord                *words.Word
+	endWord                  *words.Word
 	currentInput             input
 	currentError             string
 	wasWordLen, wasLadderLen int
-
-	puzzle             *generator.Puzzle
-	puzzleGenerateTime time.Duration
+	puzzle                   *generator.Puzzle
+	puzzleGenerateTime       time.Duration
+	wordsDisplayed           wordPoints
 }
 
 func (v *viewGenerate) wordLength() int {
@@ -61,6 +60,7 @@ func (v *viewGenerate) content(m *model) (string, *tea.Cursor) {
 		promptLen          = len(promptEndWord)
 		footerLines        = 3
 	)
+	v.wordsDisplayed = make(wordPoints)
 	var sb strings.Builder
 	sb.WriteString("\n")
 	lines := 1
@@ -128,6 +128,7 @@ func (v *viewGenerate) content(m *model) (string, *tea.Cursor) {
 		sb.WriteString("\n" + promptStartWord)
 		if v.startWord != nil {
 			sb.WriteString(inputStyle.Width(v.wordLen).Render(v.startWord.String()))
+			v.wordsDisplayed.addWord(v.startWord.String(), 4, promptLen)
 		} else {
 			sb.WriteString(inputStyle.Width(v.wordLen).Render(""))
 		}
@@ -151,16 +152,20 @@ func (v *viewGenerate) content(m *model) (string, *tea.Cursor) {
 		sb.WriteString("\n" + promptStartWord)
 		if v.startWord != nil {
 			sb.WriteString(inputStyle.Width(v.wordLen).Render(v.startWord.String()))
+			v.wordsDisplayed.addWord(v.startWord.String(), 4, promptLen)
 		} else if v.puzzle != nil {
 			sb.WriteString(inputStyle.Width(v.wordLen).Render(v.puzzle.StartWord.String()))
+			v.wordsDisplayed.addWord(v.puzzle.StartWord.String(), 4, promptLen)
 		} else {
 			sb.WriteString(inputStyle.Width(v.wordLen).Render(""))
 		}
 		sb.WriteString("\n" + promptEndWord)
 		if v.endWord != nil {
 			sb.WriteString(inputStyle.Width(v.wordLen).Render(v.endWord.String()))
+			v.wordsDisplayed.addWord(v.endWord.String(), 5, promptLen)
 		} else if v.puzzle != nil {
 			sb.WriteString(inputStyle.Width(v.wordLen).Render(v.puzzle.EndWord.String()))
+			v.wordsDisplayed.addWord(v.puzzle.EndWord.String(), 5, promptLen)
 		} else {
 			sb.WriteString(inputStyle.Width(v.wordLen).Render(""))
 		}
@@ -249,6 +254,13 @@ func (v *viewGenerate) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	}
 	if v.currentInput != nil {
 		v.currentInput.key(msg)
+	}
+	return nil
+}
+
+func (v *viewGenerate) click(m *model, msg tea.Mouse) tea.Cmd {
+	if wd, ok := v.wordsDisplayed[pt{msg.Y, msg.X}]; ok {
+		return m.lookupWord(wd)
 	}
 	return nil
 }
