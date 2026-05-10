@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"gowordladder/words/resources"
+	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -37,7 +38,7 @@ func NewDictionary(wordLength int) (result *Dictionary) {
 }
 
 func (d *Dictionary) load() {
-	file, err := resources.Files.Open("dictionary-" + strconv.Itoa(d.wordLength) + "-letter-words.txt")
+	file, err := resources.Files.Open(useDictionary + "-" + strconv.Itoa(d.wordLength) + "-letters.txt")
 	if err != nil {
 		panic(any(err.Error()))
 	}
@@ -131,13 +132,22 @@ type dictionaryCache struct {
 	mutex        sync.Mutex
 }
 
+const (
+	defaultDictionary = "csw24"
+	envDictionary     = "GOWL_DICTIONARY"
+)
+
 var (
-	once  sync.Once
-	cache *dictionaryCache
+	once          sync.Once
+	cache         *dictionaryCache
+	useDictionary = defaultDictionary
 )
 
 func init() {
 	once.Do(func() {
 		cache = &dictionaryCache{dictionaries: map[int]*Dictionary{}}
+		if n, ok := os.LookupEnv(envDictionary); ok {
+			useDictionary = strings.ToLower(n)
+		}
 	})
 }
