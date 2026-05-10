@@ -3,6 +3,7 @@
 
 ### Word Statistics
 
+* Lexicon - based on CSW24
 * Islands - are words that changing any letter will not form another word
 * Doublets - are words that changing any letter will only form one other word
 * LDS% (local decay smoothness) – the longest consecutive run of ladder lengths for which each word count is at least 95% of the previous ladder length’s count, expressed as a percentage of all ladder lengths in the dictionary
