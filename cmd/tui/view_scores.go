@@ -66,7 +66,7 @@ func (v *viewScores) help() string {
 func (v *viewScores) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
 	case back, backspace:
-		m.restoreView(v.backMode, v.backView)
+		m.restoreView(highs, v.backMode, v.backView)
 	case ctrlNew:
 		v.offsetY = 0
 		m.clearScores()

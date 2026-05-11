@@ -81,10 +81,9 @@ type model struct {
 	viewGenerate  view
 	viewPlay      playView
 	viewSolutions solutionsView
-	viewLookup    lookupView
-	viewDistances lookupView
 	viewScores    scoresView
 	viewHelp      helpView
+	lookupViews   []lookupView
 
 	dictionary          *words.Dictionary
 	dictionaryLoadTimes map[int]time.Duration
@@ -117,8 +116,6 @@ func newModel(withLogging bool) *model {
 		viewGenerate:        gv,
 		viewPlay:            pv,
 		viewSolutions:       &viewSolutions{},
-		viewLookup:          &viewLookup{},
-		viewDistances:       &viewWordDistances{},
 		viewScores:          &viewScores{},
 		viewHelp:            &viewHelp{},
 		dictionaryLoadTimes: map[int]time.Duration{},
@@ -176,21 +173,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.currentView = m.viewHelp
 			}
 		case ctrlWord:
-			if m.mode != lookup {
-				cw := m.currentView.currentWord()
-				cmd := m.viewLookup.lookupWord(cw, m.mode, m.currentView)
-				m.mode = lookup
-				m.currentView = m.viewLookup
-				return m, cmd
-			}
+			cmd := m.lookupWord(m.currentView.currentWord())
+			return m, cmd
 		case ctrlDistances:
-			if m.mode != distances {
-				cw := m.currentView.currentWord()
-				cmd := m.viewDistances.lookupWord(cw, m.mode, m.currentView)
-				m.mode = distances
-				m.currentView = m.viewDistances
-				return m, cmd
-			}
+			cmd := m.lookupDistance(m.currentView.currentWord())
+			return m, cmd
 		case ctrlHighScores:
 			if m.mode != highs {
 				m.viewScores.show(m.mode, m.currentView)
@@ -300,26 +287,33 @@ func (m *model) showSolutions(s []*solving.Solution) {
 	m.currentView = m.viewSolutions
 }
 
-func (m *model) restoreView(rm mode, rv view) {
+func (m *model) restoreView(fm mode, rm mode, rv view) {
 	m.currentView = rv
 	m.mode = rm
+	if (fm == lookup || fm == distances) && len(m.lookupViews) > 0 {
+		m.lookupViews = m.lookupViews[:len(m.lookupViews)-1]
+	}
 }
 
 func (m *model) lookupWord(word string) tea.Cmd {
 	if m.mode != lookup {
-		cmd := m.viewLookup.lookupWord(word, m.mode, m.currentView)
+		luv := &viewLookup{}
+		m.lookupViews = append(m.lookupViews, luv)
+		cmd := luv.lookupWord(word, m.mode, m.currentView)
 		m.mode = lookup
-		m.currentView = m.viewLookup
+		m.currentView = luv
 		return cmd
 	}
 	return nil
 }
 
-func (m *model) distanceWord(word string) tea.Cmd {
+func (m *model) lookupDistance(word string) tea.Cmd {
 	if m.mode != distances {
-		cmd := m.viewDistances.lookupWord(word, m.mode, m.currentView)
+		luv := &viewDistances{}
+		m.lookupViews = append(m.lookupViews, luv)
+		cmd := luv.lookupWord(word, m.mode, m.currentView)
 		m.mode = distances
-		m.currentView = m.viewDistances
+		m.currentView = luv
 		return cmd
 	}
 	return nil

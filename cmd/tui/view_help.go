@@ -47,7 +47,7 @@ func (v *viewHelp) help() string {
 func (v *viewHelp) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
 	case back, backspace:
-		m.restoreView(v.backMode, v.backView)
+		m.restoreView(help, v.backMode, v.backView)
 	case up:
 		if v.offsetY > 0 {
 			v.offsetY--

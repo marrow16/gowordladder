@@ -143,7 +143,7 @@ func (v *viewSolutions) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 		if v.showingAnalysis {
 			v.showingAnalysis = false
 		} else {
-			m.restoreView(v.backMode, v.backView)
+			m.restoreView(solutions, v.backMode, v.backView)
 		}
 	case ctrlAnalyse:
 		if !v.showingAnalysis && len(v.solutions) > 1 {

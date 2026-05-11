@@ -95,7 +95,7 @@ func (v *viewLookup) help() string {
 func (v *viewLookup) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
 	case back:
-		m.restoreView(v.backMode, v.backView)
+		m.restoreView(lookup, v.backMode, v.backView)
 		return nil
 	case up:
 		if v.offsetY > 0 {

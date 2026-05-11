@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-type viewWordDistances struct {
+type viewDistances struct {
 	backMode         mode
 	backView         view
 	offsetY, offsetX int
@@ -18,7 +18,7 @@ type viewWordDistances struct {
 	wordsDisplayed   wordPoints
 }
 
-func (v *viewWordDistances) content(m *model) (string, *tea.Cursor) {
+func (v *viewDistances) content(m *model) (string, *tea.Cursor) {
 	const (
 		prompt      = " Word: "
 		footerLines = 2
@@ -99,14 +99,14 @@ func (v *viewWordDistances) content(m *model) (string, *tea.Cursor) {
 	return sb.String(), csr
 }
 
-func (v *viewWordDistances) help() string {
+func (v *viewDistances) help() string {
 	return "enter: Lookup  •  " + back + ": Back"
 }
 
-func (v *viewWordDistances) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
+func (v *viewDistances) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
 	case back:
-		m.restoreView(v.backMode, v.backView)
+		m.restoreView(distances, v.backMode, v.backView)
 		return nil
 	case up:
 		if v.offsetY > 0 {
@@ -159,13 +159,13 @@ func (v *viewWordDistances) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	return nil
 }
 
-func (v *viewWordDistances) paste(m *model, msg tea.PasteMsg) {
+func (v *viewDistances) paste(m *model, msg tea.PasteMsg) {
 	if v.input != nil {
 		v.input.paste(msg)
 	}
 }
 
-func (v *viewWordDistances) click(m *model, msg tea.Mouse) tea.Cmd {
+func (v *viewDistances) click(m *model, msg tea.Mouse) tea.Cmd {
 	if msg.Y == 2 && msg.X >= 7 && msg.X <= 22 {
 		if s := v.input.value(); len(s) > 0 {
 			return m.lookupWord(s)
@@ -191,7 +191,7 @@ func (v *viewWordDistances) click(m *model, msg tea.Mouse) tea.Cmd {
 	return nil
 }
 
-func (v *viewWordDistances) update(m *model, msg tea.Msg) tea.Cmd {
+func (v *viewDistances) update(m *model, msg tea.Msg) tea.Cmd {
 	if dr, ok := msg.(distancesResult); ok {
 		v.input.set(dr.word)
 		v.distancesResult = &dr
@@ -199,21 +199,21 @@ func (v *viewWordDistances) update(m *model, msg tea.Msg) tea.Cmd {
 	return nil
 }
 
-func (v *viewWordDistances) wordLength() int {
+func (v *viewDistances) wordLength() int {
 	if v.input != nil {
 		return len(v.input.value())
 	}
 	return 0
 }
 
-func (v *viewWordDistances) currentWord() string {
+func (v *viewDistances) currentWord() string {
 	if v.input != nil {
 		return v.input.value()
 	}
 	return ""
 }
 
-func (v *viewWordDistances) lookupWord(word string, backMode mode, backView view) tea.Cmd {
+func (v *viewDistances) lookupWord(word string, backMode mode, backView view) tea.Cmd {
 	if v.distancesResult != nil && v.distancesResult.word == word {
 		return nil
 	}
@@ -236,11 +236,11 @@ type distancesResult struct {
 	distances       map[int][]string
 }
 
-func (v *viewWordDistances) doLookup() tea.Cmd {
+func (v *viewDistances) doLookup() tea.Cmd {
 	return v.doLookupWord(v.input.value())
 }
 
-func (v *viewWordDistances) doLookupWord(s string) tea.Cmd {
+func (v *viewDistances) doLookupWord(s string) tea.Cmd {
 	if l := len(s); l >= 2 {
 		v.distancesResult = nil
 		v.offsetX = 0
