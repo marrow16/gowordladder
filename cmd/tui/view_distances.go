@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type viewDistances struct {
@@ -29,7 +30,7 @@ func (v *viewDistances) content(m *model) (string, *tea.Cursor) {
 	s, cxp := v.input.render()
 	sb.WriteString(s)
 	csr := tea.NewCursor(cxp+len(prompt), 2)
-	sb.WriteString("\n" + strings.Repeat("─", m.width) + "\n")
+	sb.WriteString("\n" + helpStyle.Render(strings.Repeat(horizontal, m.width)) + "\n")
 	lines := 4
 	if v.distancesResult != nil {
 		if !v.distancesResult.inDictionary {
@@ -57,7 +58,7 @@ func (v *viewDistances) content(m *model) (string, *tea.Cursor) {
 				wd = lmWd + 1
 				for c := 0; c < v.distancesResult.maxLadderLength && (c+v.offsetX) < v.distancesResult.maxLadderLength && (wd+colWd) < m.width; c++ {
 					sb.WriteString(" ")
-					sb.WriteString(helpStyle.Render(topLeft + strings.Repeat(topBottom, v.distancesResult.wordLength) + topRight))
+					sb.WriteString(helpStyle.Render(topLeft + strings.Repeat(horizontal, v.distancesResult.wordLength) + topRight))
 					sb.WriteString(" ")
 					wd += colWd
 				}
@@ -83,7 +84,7 @@ func (v *viewDistances) content(m *model) (string, *tea.Cursor) {
 						sb.WriteString(helpStyle.Render(vertical))
 						v.wordsDisplayed.addWord(wds[wn], lines, wd+2)
 					case wn == len(wds):
-						sb.WriteString(helpStyle.Render(bottomLeft + strings.Repeat(topBottom, v.distancesResult.wordLength) + bottomRight))
+						sb.WriteString(helpStyle.Render(bottomLeft + strings.Repeat(horizontal, v.distancesResult.wordLength) + bottomRight))
 					default:
 						sb.WriteString(strings.Repeat(" ", v.distancesResult.wordLength+2))
 					}
@@ -170,6 +171,7 @@ func (v *viewDistances) click(m *model, msg tea.Mouse) tea.Cmd {
 		if s := v.input.value(); len(s) > 0 {
 			return m.lookupWord(s)
 		}
+		return nil
 	} else if msg.Y == 4 && msg.X > 0 && v.distancesResult != nil {
 		if msg.X < v.distancesResult.wordLength+1 {
 			return m.lookupWord(v.distancesResult.word)
@@ -179,11 +181,15 @@ func (v *viewDistances) click(m *model, msg tea.Mouse) tea.Cmd {
 				v.offsetX = 0
 			}
 		}
+		return nil
 	}
 	if wd, ok := v.wordsDisplayed[pt{msg.Y, msg.X}]; ok {
 		switch msg.Button {
 		case tea.MouseLeft:
-			return v.doLookupWord(wd)
+			cmd := v.doLookupWord(wd)
+			// delay here to prevent double hit?
+			time.Sleep(400 * time.Millisecond)
+			return cmd
 		case tea.MouseRight:
 			return m.lookupWord(wd)
 		}

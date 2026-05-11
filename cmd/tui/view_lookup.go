@@ -34,7 +34,7 @@ func (v *viewLookup) content(m *model) (string, *tea.Cursor) {
 	s, cxp := v.input.render()
 	sb.WriteString(s)
 	csr := tea.NewCursor(cxp+len(prompt), 2)
-	sb.WriteString("\n" + strings.Repeat("─", m.width) + "\n")
+	sb.WriteString("\n" + helpStyle.Render(strings.Repeat(horizontal, m.width)) + "\n")
 	lines := 4
 	if v.variationsResult != nil {
 		if len(v.variationsResult.variations) == 0 {

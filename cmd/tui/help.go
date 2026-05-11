@@ -64,7 +64,7 @@ func (h helpData) render(width int) []string {
 	result := make([]string, 0, len(h)*10)
 	for i := 0; i < len(h); i++ {
 		if i > 0 {
-			result = append(result, " "+helpStyle.Render(strings.Repeat(topBottom, width-2)))
+			result = append(result, " "+helpStyle.Render(strings.Repeat(horizontal, width-2)))
 		}
 		item := h[i]
 		result = append(result, item.header.render(width))

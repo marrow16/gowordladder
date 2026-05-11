@@ -61,7 +61,7 @@ func (v *viewPlay) content(m *model) (string, *tea.Cursor) {
 		sb.WriteString(padL)
 		switch {
 		case rung == -2:
-			sb.WriteString(helpStyle.Render("   " + topLeft + strings.Repeat(topBottom, v.puzzle.WordLength) + topRight))
+			sb.WriteString(helpStyle.Render("   " + topLeft + strings.Repeat(horizontal, v.puzzle.WordLength) + topRight))
 		case rung == -1:
 			sb.WriteString(helpStyle.Render(" 1 " + vertical))
 			if v.solved {
@@ -82,7 +82,7 @@ func (v *viewPlay) content(m *model) (string, *tea.Cursor) {
 			sb.WriteString(helpStyle.Render(vertical))
 			v.wordsDisplayed.addWord(v.puzzle.EndWord.String(), lines-1, x)
 		case rung == v.puzzle.LadderLength-1:
-			sb.WriteString(helpStyle.Render("   " + bottomLeft + strings.Repeat(topBottom, v.puzzle.WordLength) + bottomRight))
+			sb.WriteString(helpStyle.Render("   " + bottomLeft + strings.Repeat(horizontal, v.puzzle.WordLength) + bottomRight))
 		case rung < v.puzzle.LadderLength:
 			if rung == v.onStep {
 				csr = tea.NewCursor(len(padL)+4+v.onChar, lines-1)

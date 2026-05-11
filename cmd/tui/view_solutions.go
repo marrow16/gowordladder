@@ -50,7 +50,7 @@ func (v *viewSolutions) content(m *model) (string, *tea.Cursor) {
 		if v.offsetY == 0 {
 			sb.WriteString("\n ")
 			lines++
-			hdr := "  " + topLeft + strings.Repeat(topBottom, v.wordLen) + topRight
+			hdr := "  " + topLeft + strings.Repeat(horizontal, v.wordLen) + topRight
 			hdr += strings.Repeat(" ", v.solutionWidth-utf8.RuneCountInString(hdr))
 			for s := 0; s < numSolutions && (s+v.offsetX) < len(v.solutions); s++ {
 				sb.WriteString(helpStyle.Render(hdr))
@@ -92,7 +92,7 @@ func (v *viewSolutions) content(m *model) (string, *tea.Cursor) {
 					v.wordsDisplayed.addWord(ladder[row].String(), lines-1, x)
 				} else if row == len(ladder) {
 					sb.WriteString(helpStyle.Render(bottomLeft))
-					sb.WriteString(helpStyle.Render(strings.Repeat(topBottom, v.wordLen)))
+					sb.WriteString(helpStyle.Render(strings.Repeat(horizontal, v.wordLen)))
 					sb.WriteString(helpStyle.Render(bottomRight))
 					sb.WriteString(strings.Repeat(" ", v.solutionWidth-v.wordLen-2))
 				} else {

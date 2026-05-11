@@ -176,7 +176,7 @@ func (v *viewGenerate) content(m *model) (string, *tea.Cursor) {
 		} else {
 			sb.WriteString("\n\n  Took " + highlightStyle.Render(truncateDuration(v.puzzleGenerateTime)) + " to generate puzzle")
 			sb.WriteString("\n  Max score: " + highlightStyle.Render(fmt.Sprintf("%.0f", v.puzzle.MaxScore)))
-			sb.WriteString(", " + highlightStyle.Render(commas(len(v.puzzle.Solutions))) + " solutions")
+			sb.WriteString(" (" + highlightStyle.Render(commas(len(v.puzzle.Solutions))) + " solutions)")
 			lines += 3
 		}
 	}

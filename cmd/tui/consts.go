@@ -4,7 +4,7 @@ package main
 const (
 	topLeft     = "╭"
 	topRight    = "╮"
-	topBottom   = "─"
+	horizontal  = "─"
 	bottomLeft  = "╰"
 	bottomRight = "╯"
 	vertical    = "│"
