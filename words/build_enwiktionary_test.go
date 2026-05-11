@@ -10,12 +10,17 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
 )
 
-const enwiktionaryLlatest = "https://dumps.wikimedia.org/enwiktionary/latest/enwiktionary-latest-pages-articles.xml.bz2"
+const (
+	enwiktionaryLlatest = "https://dumps.wikimedia.org/enwiktionary/latest/enwiktionary-latest-pages-articles.xml.bz2"
+	stage1Fmt           = "./resources/enwiktionary-%d-letters.txt.tmp"
+	stage2Fmt           = "./resources/enwiktionary-%d-letters.txt"
+)
 
 var simpleWord = regexp.MustCompile(`^[a-z]+$`)
 
@@ -28,11 +33,10 @@ type mediaWikiPage struct {
 }
 
 func TestEnWiktionaryProcess_Stage1(t *testing.T) {
-	t.Skip()
+	t.Skip() // because this takes time and should only be explicitly run
 	files := make(map[int]*os.File)
-	outFmt := "./resources/enwiktionary-%d-letters.txt.tmp"
 	for i := 2; i <= 15; i++ {
-		f, err := os.Create(fmt.Sprintf(outFmt, i))
+		f, err := os.Create(fmt.Sprintf(stage1Fmt, i))
 		require.NoError(t, err)
 		files[i] = f
 	}
@@ -47,6 +51,7 @@ func TestEnWiktionaryProcess_Stage1(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	bz := bzip2.NewReader(resp.Body)
 	decoder := xml.NewDecoder(bz)
+	count := 0
 	for {
 		tok, err := decoder.Token()
 		if err == io.EOF {
@@ -72,6 +77,11 @@ func TestEnWiktionaryProcess_Stage1(t *testing.T) {
 		if ln := len(wd); ln >= 2 && ln <= 15 {
 			_, _ = files[ln].WriteString(wd)
 			_, _ = files[ln].WriteString("\n")
+			count++
+			if count%1000 == 0 {
+				// log some progress...
+				t.Logf("Written %d words", count)
+			}
 		}
 	}
 }
@@ -83,14 +93,12 @@ func containsEnglishSection(text string) bool {
 }
 
 func TestEnWiktionaryProcess_Stage2(t *testing.T) {
-	t.Skip()
-	inFmt := "./resources/enwiktionary-%d-letters.txt.tmp"
-	outFmt := "./resources/enwiktionary-%d-letters.txt"
+	t.Skip() // because this takes time and should only be explicitly run
 	for i := 2; i <= 15; i++ {
 		t.Run(fmt.Sprintf("Building %d", i), func(t *testing.T) {
-			inf, err := os.Open(fmt.Sprintf(inFmt, i))
+			inf, err := os.Open(fmt.Sprintf(stage1Fmt, i))
 			require.NoError(t, err)
-			outf, err := os.Create(fmt.Sprintf(outFmt, i))
+			outf, err := os.Create(fmt.Sprintf(stage2Fmt, i))
 			require.NoError(t, err)
 			defer func() {
 				_ = inf.Close()
@@ -98,24 +106,44 @@ func TestEnWiktionaryProcess_Stage2(t *testing.T) {
 			}()
 			vars := make(variations)
 			scanner := bufio.NewScanner(inf)
-			words := map[string]*Word{}
+			words := make([]*Word, 0, 100_000)
+			wordsSet := make(set)
+			t.Log("Reading words")
 			for scanner.Scan() {
 				wd := strings.ToUpper(scanner.Text())
-				word := words[wd]
-				if word == nil {
-					word = newWord(wd, 0)
-					words[wd] = word
+				if !wordsSet.hasAdd(wd) {
+					word := newWord(wd, 0)
+					words = append(words, word)
+					vars.link(word)
 				}
-				vars.link(word)
 			}
+			t.Logf("Sorting %d words", len(words))
+			slices.SortFunc(words, func(a, b *Word) int {
+				return strings.Compare(a.actualWord, b.actualWord)
+			})
+			t.Logf("Writing %d words", len(words))
 			maxwdl := 100
-			for k, v := range words {
-				wdm := NewWordDistanceMap(v, &maxwdl)
-				_, _ = outf.WriteString(k)
+			for n, word := range words {
+				wdm := NewWordDistanceMap(word, &maxwdl)
+				_, _ = outf.WriteString(word.actualWord)
 				_, _ = outf.WriteString("\t")
 				_, _ = outf.WriteString(strconv.Itoa(wdm.MaxDistance()))
 				_, _ = outf.WriteString("\n")
+				if n > 0 && n%1000 == 0 {
+					// log some progress...
+					t.Logf("Written %d words (%s)", n, word.actualWord)
+				}
 			}
 		})
 	}
+}
+
+type set map[string]struct{}
+
+func (s set) hasAdd(word string) bool {
+	if _, ok := s[word]; !ok {
+		s[word] = struct{}{}
+		return false
+	}
+	return true
 }
