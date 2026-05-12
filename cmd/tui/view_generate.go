@@ -3,8 +3,8 @@ package main
 import (
 	tea "charm.land/bubbletea/v2"
 	"fmt"
-	"gowordladder/generator"
-	"gowordladder/words"
+	"github.com/marrow16/gowordladder/generator"
+	"github.com/marrow16/gowordladder/words"
 	"slices"
 	"strconv"
 	"strings"
@@ -62,6 +62,7 @@ func (v *viewGenerate) content(m *model) (string, *tea.Cursor) {
 	)
 	v.wordsDisplayed = make(wordPoints)
 	var sb strings.Builder
+	sb.Grow(m.height * m.width)
 	sb.WriteString("\n")
 	lines := 1
 	cpx := -1

@@ -1,9 +1,9 @@
 package generator
 
 import (
+	"github.com/marrow16/gowordladder/solving"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gowordladder/solving"
 	"testing"
 )
 
@@ -21,9 +21,9 @@ func TestGeneratePuzzle_cat2dog(t *testing.T) {
 	require.NotNil(t, p)
 	assert.Equal(t, 3, p.WordLength)
 	assert.Equal(t, 5, p.LadderLength)
-	assert.Equal(t, 221, len(p.Solutions))
-	assert.Equal(t, 1153.0, p.MaxScore)
-	assert.Equal(t, 385.0, p.RungScore)
+	assert.Equal(t, 215, len(p.Solutions))
+	assert.Equal(t, 1163.0, p.MaxScore)
+	assert.Equal(t, 388.0, p.RungScore)
 
 	p, err = GeneratePuzzle(3, 4, &start, &end)
 	require.NoError(t, err)

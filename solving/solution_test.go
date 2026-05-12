@@ -1,8 +1,8 @@
 package solving
 
 import (
+	"github.com/marrow16/gowordladder/words"
 	"github.com/stretchr/testify/assert"
-	"gowordladder/words"
 	"testing"
 )
 

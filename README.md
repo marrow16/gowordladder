@@ -2,15 +2,27 @@
 
 GoLang [Word Ladder](https://en.wikipedia.org/wiki/Word_ladder) solver, generator & analysis.
 
-Run CLI interactively:
+## Running
+
+(requires Go 1.26 installed)
+
+CLI interactively:
 ```
 go run ./cmd/cli
 ```
 
-Run TUI (terminal UI):
+TUI (terminal UI):
 ```
 go run ./cmd/tui
 ```
+
+Both will use default dictionary - to use an alternate dictionary:
+
+```
+export GOWL_DICTIONARY=enwiktionary
+```
+
+#### TUI Screenshots
 
 ![screenshot](./_screenshots/screenshot1.png)
 ![screenshot](./_screenshots/screenshot2.png)

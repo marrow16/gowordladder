@@ -25,6 +25,8 @@ const (
 	pageRight      = "shift+right"
 	pageUp         = "pgup"
 	pageDown       = "pgdown"
+	home           = "home"
+	end            = "end"
 	ctrlWord       = "ctrl+w"
 	ctrlGenerate   = "ctrl+g"
 	ctrlSolver     = "ctrl+s"
@@ -38,4 +40,5 @@ const (
 	ctrlExport     = "ctrl+x"
 	exit           = "esc"
 	fHelp          = "f1"
+	backChar       = "«"
 )

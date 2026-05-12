@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"gowordladder/solving"
-	"gowordladder/words"
+	"github.com/marrow16/gowordladder/solving"
+	"github.com/marrow16/gowordladder/words"
 	"os"
 	"sort"
 	"strconv"

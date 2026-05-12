@@ -3,7 +3,7 @@ package words
 import (
 	"bufio"
 	"fmt"
-	"gowordladder/words/resources"
+	"github.com/marrow16/gowordladder/words/resources"
 	"os"
 	"slices"
 	"strconv"
@@ -136,6 +136,13 @@ const (
 	defaultDictionary = "csw24"
 	envDictionary     = "GOWL_DICTIONARY"
 )
+
+func CurrentDictionary() string {
+	if useDictionary == defaultDictionary {
+		return "default"
+	}
+	return useDictionary
+}
 
 var (
 	once          sync.Once

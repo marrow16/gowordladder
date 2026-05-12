@@ -4,7 +4,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"fmt"
-	"gowordladder/generator"
+	"github.com/marrow16/gowordladder/generator"
 	"strings"
 )
 
@@ -30,6 +30,7 @@ func (v *viewScores) content(m *model) (string, *tea.Cursor) {
 		footerLines = 2
 	)
 	var sb strings.Builder
+	sb.Grow(m.height * m.width)
 	sb.WriteString("\n")
 	lines := 2
 	if len(m.prefs.HighScores) == 0 {

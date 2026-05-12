@@ -4,7 +4,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"fmt"
-	"gowordladder/solving"
+	"github.com/marrow16/gowordladder/solving"
 	"os"
 	"sort"
 	"strconv"
@@ -36,6 +36,7 @@ func (v *viewSolutions) content(m *model) (string, *tea.Cursor) {
 	)
 	v.wordsDisplayed = make(wordPoints)
 	var sb strings.Builder
+	sb.Grow(m.height * m.width)
 	lines := 1
 	if !v.showingAnalysis {
 		v.solutionWidth = v.calculateSolutionWidth()
@@ -151,6 +152,20 @@ func (v *viewSolutions) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 		}
 	case ctrlExport:
 		go v.export()
+	case home:
+		v.offsetX = 0
+		v.offsetY = 0
+	case end:
+		if !v.showingAnalysis {
+			v.offsetX = len(v.solutions) - 1
+			if v.offsetX < 0 {
+				v.offsetX = 0
+			}
+			v.offsetY = v.maxLadderLen + 5 - m.height
+			if v.offsetY < 0 {
+				v.offsetY = 0
+			}
+		}
 	case up:
 		if v.offsetY > 0 {
 			v.offsetY--

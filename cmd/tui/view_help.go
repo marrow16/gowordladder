@@ -24,6 +24,7 @@ func (v *viewHelp) content(m *model) (string, *tea.Cursor) {
 		footerLines = 2
 	)
 	var sb strings.Builder
+	sb.Grow(m.height * m.width)
 	lines := 1
 	maxLines := m.height - lines - footerLines
 	if m.width != v.cachedWidth {
@@ -37,7 +38,6 @@ func (v *viewHelp) content(m *model) (string, *tea.Cursor) {
 	}
 	sb.WriteString(padLines(m.height - lines - footerLines))
 	return sb.String(), nil
-
 }
 
 func (v *viewHelp) help() string {

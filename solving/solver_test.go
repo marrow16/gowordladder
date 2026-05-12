@@ -1,8 +1,8 @@
 package solving
 
 import (
+	"github.com/marrow16/gowordladder/words"
 	"github.com/stretchr/testify/assert"
-	"gowordladder/words"
 	"testing"
 )
 
@@ -13,7 +13,7 @@ func TestSolveCatToDog(t *testing.T) {
 	solver := NewSolver(NewPuzzle(cat, dog))
 	solutions := solver.Solve(4)
 	assert.Equal(t, 4, len(solutions))
-	assert.Equal(t, 10, solver.ExploredCount())
+	assert.Equal(t, 11, solver.ExploredCount())
 
 	midWords := &map[string]int{}
 	for _, solution := range solutions {

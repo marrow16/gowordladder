@@ -1,4 +1,4 @@
-module gowordladder
+module github.com/marrow16/gowordladder
 
 go 1.26
 

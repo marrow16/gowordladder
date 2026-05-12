@@ -3,6 +3,7 @@ package main
 import (
 	"charm.land/lipgloss/v2"
 	"fmt"
+	"github.com/marrow16/gowordladder/words"
 	"strings"
 )
 
@@ -211,6 +212,7 @@ var helpText = helpData{
 		"About",
 		[]helpLine{
 			{text("The built-in dictionary is based on the Official Collins Scrabble Words (2024).")},
+			{text("[current dictionary: "), highlight(words.CurrentDictionary()), text("]")},
 			{},
 			{text("Word meanings are brought to you courtesy of "), highlight(dictionaryUrl)},
 			{},
