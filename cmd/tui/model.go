@@ -3,9 +3,9 @@ package main
 import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"gowordladder/generator"
-	"gowordladder/solving"
-	"gowordladder/words"
+	"github.com/marrow16/gowordladder/generator"
+	"github.com/marrow16/gowordladder/solving"
+	"github.com/marrow16/gowordladder/words"
 	"log/slog"
 	"math/rand"
 	"os"
@@ -49,6 +49,14 @@ func (m mode) String() string {
 		return "Help"
 	}
 	return ""
+}
+
+func (m mode) canBack() bool {
+	switch m {
+	case help, solutions, highs, lookup, distances:
+		return true
+	}
+	return false
 }
 
 type view interface {
@@ -137,26 +145,36 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = mt.Width
 		m.height = mt.Height
-	case tea.MouseMsg:
+	case tea.MouseClickMsg:
 		mmsg := mt.Mouse()
 		switch {
-		case mmsg.Button == tea.MouseLeft && mmsg.Y == 0 && mmsg.X < 8 && m.mode != help:
-			m.viewHelp.show(m.mode, m.currentView)
-			m.mode = help
-			m.currentView = m.viewHelp
-			return m, nil
-		case mmsg.Button == tea.MouseWheelDown:
-			m.currentView.key(m, tea.KeyPressMsg{Text: down})
-		case mmsg.Button == tea.MouseWheelUp:
-			m.currentView.key(m, tea.KeyPressMsg{Text: up})
-		case mmsg.Button == tea.MouseWheelLeft:
-			m.currentView.key(m, tea.KeyPressMsg{Text: left})
-		case mmsg.Button == tea.MouseWheelRight:
-			m.currentView.key(m, tea.KeyPressMsg{Text: right})
-		case mmsg.Button == tea.MouseLeft || mmsg.Button == tea.MouseRight:
+		case mmsg.Button == tea.MouseLeft && mmsg.Y == 0 && mmsg.X < 3 && m.mode.canBack():
+			return m, m.currentView.key(m, tea.KeyPressMsg{Text: back})
+		case mmsg.Button == tea.MouseLeft && mmsg.Y == 0 && m.mode != help:
+			hxs, hxe := 1, len(helpHdr)
+			if m.mode == solutions || m.mode == lookup || m.mode == distances || m.mode == highs {
+				hxs += 2
+				hxe += 2
+			}
+			if mmsg.X >= hxs && mmsg.X <= hxe {
+				m.showHelp()
+			}
+		case mmsg.Y > 0:
 			if cv, ok := m.currentView.(viewClickable); ok {
 				return m, cv.click(m, mmsg)
 			}
+		}
+	case tea.MouseWheelMsg:
+		mmsg := mt.Mouse()
+		switch mmsg.Button {
+		case tea.MouseWheelDown:
+			m.currentView.key(m, tea.KeyPressMsg{Text: down})
+		case tea.MouseWheelUp:
+			m.currentView.key(m, tea.KeyPressMsg{Text: up})
+		case tea.MouseWheelLeft:
+			m.currentView.key(m, tea.KeyPressMsg{Text: left})
+		case tea.MouseWheelRight:
+			m.currentView.key(m, tea.KeyPressMsg{Text: right})
 		}
 	case tea.PasteMsg:
 		if pv, ok := m.currentView.(viewPasteable); ok {
@@ -167,11 +185,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", exit:
 			return m, tea.Quit
 		case fHelp:
-			if m.mode != help {
-				m.viewHelp.show(m.mode, m.currentView)
-				m.mode = help
-				m.currentView = m.viewHelp
-			}
+			m.showHelp()
 		case ctrlWord:
 			cmd := m.lookupWord(m.currentView.currentWord())
 			return m, cmd
@@ -193,6 +207,14 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.currentView.update(m, msg)
 	}
 	return m, nil
+}
+
+func (m *model) showHelp() {
+	if m.mode != help {
+		m.viewHelp.show(m.mode, m.currentView)
+		m.mode = help
+		m.currentView = m.viewHelp
+	}
 }
 
 func (m *model) viewSwitch(key string) bool {
@@ -233,13 +255,17 @@ func (m *model) View() tea.View {
 	return v
 }
 
+const helpHdr = fHelp + ":help"
+
 func (m *model) headerView() string {
 	hdr := "Go Word Ladder - " + m.mode.String()
-	if m.mode != help {
-		const helpHdr = " " + fHelp + ":help"
-		return headerStyle.Width(m.width).Render(center3(m.width, helpHdr, hdr, ""))
-	} else {
-		return headerStyle.Width(m.width).Render(hdr)
+	switch {
+	case m.mode == help:
+		return headerStyle.Width(m.width).Render(center3(m.width, " "+backChar, hdr, ""))
+	case m.mode.canBack():
+		return headerStyle.Width(m.width).Render(center3(m.width, " "+backChar+" "+helpHdr, hdr, ""))
+	default:
+		return headerStyle.Width(m.width).Render(center3(m.width, " "+helpHdr, hdr, ""))
 	}
 }
 
@@ -319,7 +345,7 @@ func (m *model) lookupDistance(word string) tea.Cmd {
 	return nil
 }
 
-func center3(wd int, left, mid, right string) string {
+func center3(wd int, left, mid, right string, styles ...*lipgloss.Style) string {
 	ll, lm, lr := len(left), len(mid), len(right)
 	lmw := lm / 2
 	rmw := lm - lmw
@@ -332,7 +358,26 @@ func center3(wd int, left, mid, right string) string {
 	if w := rw - rmw - lr; w > 0 {
 		rpad = strings.Repeat(" ", w)
 	}
-	return left + lpad + mid + rpad + right
+	var sb strings.Builder
+	sb.Grow(wd)
+	if len(styles) > 0 && styles[0] != nil {
+		sb.WriteString(styles[0].Render(left + lpad))
+	} else {
+		sb.WriteString(left)
+		sb.WriteString(lpad)
+	}
+	if len(styles) > 1 && styles[1] != nil {
+		sb.WriteString(styles[1].Render(mid))
+	} else {
+		sb.WriteString(mid)
+	}
+	if len(styles) > 2 && styles[2] != nil {
+		sb.WriteString(styles[2].Render(rpad + right))
+	} else {
+		sb.WriteString(rpad)
+		sb.WriteString(right)
+	}
+	return sb.String()
 }
 
 func padLines(lines int) string {

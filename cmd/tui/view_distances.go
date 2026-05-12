@@ -3,11 +3,10 @@ package main
 import (
 	tea "charm.land/bubbletea/v2"
 	"fmt"
-	"gowordladder/words"
+	"github.com/marrow16/gowordladder/words"
 	"slices"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type viewDistances struct {
@@ -26,6 +25,7 @@ func (v *viewDistances) content(m *model) (string, *tea.Cursor) {
 	)
 	v.wordsDisplayed = make(wordPoints)
 	var sb strings.Builder
+	sb.Grow(m.height * m.width)
 	sb.WriteString("\n" + prompt)
 	s, cxp := v.input.render()
 	sb.WriteString(s)
@@ -109,6 +109,20 @@ func (v *viewDistances) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	case back:
 		m.restoreView(distances, v.backMode, v.backView)
 		return nil
+	case home:
+		v.offsetY = 0
+		v.offsetX = 0
+	case end:
+		if v.distancesResult != nil {
+			v.offsetY = v.distancesResult.maxWords + 9 - m.height
+			if v.offsetY < 0 {
+				v.offsetY = 0
+			}
+			v.offsetX = v.distancesResult.maxWordsAt - 1
+			if v.offsetX < 0 {
+				v.offsetX = 0
+			}
+		}
 	case up:
 		if v.offsetY > 0 {
 			v.offsetY--
@@ -186,10 +200,7 @@ func (v *viewDistances) click(m *model, msg tea.Mouse) tea.Cmd {
 	if wd, ok := v.wordsDisplayed[pt{msg.Y, msg.X}]; ok {
 		switch msg.Button {
 		case tea.MouseLeft:
-			cmd := v.doLookupWord(wd)
-			// delay here to prevent double hit?
-			time.Sleep(400 * time.Millisecond)
-			return cmd
+			return v.doLookupWord(wd)
 		case tea.MouseRight:
 			return m.lookupWord(wd)
 		}

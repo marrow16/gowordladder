@@ -1,8 +1,8 @@
 package solving
 
 import (
+	"github.com/marrow16/gowordladder/words"
 	"github.com/stretchr/testify/assert"
-	"gowordladder/words"
 	"testing"
 )
 
@@ -12,9 +12,9 @@ func TestCalculateMinimumLadderLength(t *testing.T) {
 	endWord, _ := dictionary.Word("DOG")
 
 	puzzle := NewPuzzle(startWord, endWord)
-	min, ok := puzzle.CalculateMinimumLadderLength()
+	m, ok := puzzle.CalculateMinimumLadderLength()
 	assert.True(t, ok)
-	assert.Equal(t, 4, min)
+	assert.Equal(t, 4, m)
 }
 
 func TestCalculateMinimumLadderLengthOneLetterDifference(t *testing.T) {
@@ -23,9 +23,9 @@ func TestCalculateMinimumLadderLengthOneLetterDifference(t *testing.T) {
 	endWord, _ := dictionary.Word("COT")
 
 	puzzle := NewPuzzle(startWord, endWord)
-	min, ok := puzzle.CalculateMinimumLadderLength()
+	m, ok := puzzle.CalculateMinimumLadderLength()
 	assert.True(t, ok)
-	assert.Equal(t, 2, min)
+	assert.Equal(t, 2, m)
 }
 
 func TestCalculateMinimumLadderLengthTwoLetterDifference(t *testing.T) {
@@ -34,9 +34,9 @@ func TestCalculateMinimumLadderLengthTwoLetterDifference(t *testing.T) {
 	endWord, _ := dictionary.Word("COP")
 
 	puzzle := NewPuzzle(startWord, endWord)
-	min, ok := puzzle.CalculateMinimumLadderLength()
+	m, ok := puzzle.CalculateMinimumLadderLength()
 	assert.True(t, ok)
-	assert.Equal(t, 3, min)
+	assert.Equal(t, 3, m)
 }
 
 func TestCalculateMinimumLadderLengthSameWord(t *testing.T) {
@@ -45,9 +45,9 @@ func TestCalculateMinimumLadderLengthSameWord(t *testing.T) {
 	endWord, _ := dictionary.Word("CAT")
 
 	puzzle := NewPuzzle(startWord, endWord)
-	min, ok := puzzle.CalculateMinimumLadderLength()
+	m, ok := puzzle.CalculateMinimumLadderLength()
 	assert.True(t, ok)
-	assert.Equal(t, 1, min)
+	assert.Equal(t, 1, m)
 }
 
 func TestCalculateMinimumLadderLengthFlips(t *testing.T) {
@@ -56,7 +56,7 @@ func TestCalculateMinimumLadderLengthFlips(t *testing.T) {
 	endWord, _ := dictionary.Word("ANI")
 
 	puzzle := NewPuzzle(startWord, endWord)
-	min, ok := puzzle.CalculateMinimumLadderLength()
+	m, ok := puzzle.CalculateMinimumLadderLength()
 	assert.True(t, ok)
-	assert.Equal(t, 5, min)
+	assert.Equal(t, 5, m)
 }

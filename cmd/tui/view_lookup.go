@@ -4,7 +4,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"encoding/json"
 	"fmt"
-	"gowordladder/words"
+	"github.com/marrow16/gowordladder/words"
 	"net/http"
 	"strconv"
 	"strings"
@@ -30,6 +30,7 @@ func (v *viewLookup) content(m *model) (string, *tea.Cursor) {
 		footerLines = 2
 	)
 	var sb strings.Builder
+	sb.Grow(m.height * m.width)
 	sb.WriteString("\n" + prompt)
 	s, cxp := v.input.render()
 	sb.WriteString(s)
@@ -208,7 +209,7 @@ func (v *viewLookup) apiLookup() (result *dictionaryResponse, err error) {
 					result.normalize()
 				}
 			} else {
-				err = fmt.Errorf("unexpected response status: %d", resp.Status)
+				err = fmt.Errorf("unexpected response status: %d", resp.StatusCode)
 			}
 		}
 	}

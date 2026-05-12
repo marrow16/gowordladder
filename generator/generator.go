@@ -3,8 +3,8 @@ package generator
 import (
 	"errors"
 	"fmt"
-	"gowordladder/solving"
-	"gowordladder/words"
+	"github.com/marrow16/gowordladder/solving"
+	"github.com/marrow16/gowordladder/words"
 	"math"
 	"math/rand"
 	"time"

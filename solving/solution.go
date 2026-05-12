@@ -1,7 +1,7 @@
 package solving
 
 import (
-	"gowordladder/words"
+	"github.com/marrow16/gowordladder/words"
 	"slices"
 	"strings"
 )

@@ -3,7 +3,7 @@ package words
 import (
 	"bufio"
 	"fmt"
-	"gowordladder/words/resources"
+	"github.com/marrow16/gowordladder/words/resources"
 	"os"
 	"slices"
 	"strconv"
@@ -38,7 +38,7 @@ func NewDictionary(wordLength int) (result *Dictionary) {
 }
 
 func (d *Dictionary) load() {
-	file, err := resources.Files.Open(useDictionary + "-" + strconv.Itoa(d.wordLength) + "-letters.txt")
+	file, err := dictFs.Open(d.wordLength)
 	if err != nil {
 		panic(any(err.Error()))
 	}
@@ -137,17 +137,32 @@ const (
 	envDictionary     = "GOWL_DICTIONARY"
 )
 
+func CurrentDictionary() string {
+	if useDictionary == defaultDictionary {
+		return "default"
+	}
+	return useDictionary
+}
+
 var (
 	once          sync.Once
 	cache         *dictionaryCache
-	useDictionary = defaultDictionary
+	useDictionary              = defaultDictionary
+	dictFs        dictionaryFs = &embeddedDictionaryFs{resources.Files}
 )
 
 func init() {
 	once.Do(func() {
 		cache = &dictionaryCache{dictionaries: map[int]*Dictionary{}}
 		if n, ok := os.LookupEnv(envDictionary); ok {
-			useDictionary = strings.ToLower(n)
+			if internal := strings.ToLower(n); internal == "csw19" || internal == "csw24" || internal == "enwiktionary" {
+				useDictionary = internal
+			} else if xsf, err := newExternalDictionaryFs(n); err == nil {
+				useDictionary = n
+				dictFs = xsf
+			} else {
+				panic(envDictionary + " must be set to internal dictionary or external dictionary path (error: " + err.Error() + ")")
+			}
 		}
 	})
 }

@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"gowordladder/words"
+	"github.com/marrow16/gowordladder/words"
 	"os"
 	"slices"
 	"time"

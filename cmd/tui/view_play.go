@@ -2,9 +2,10 @@ package main
 
 import (
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"fmt"
-	"gowordladder/generator"
-	"gowordladder/words"
+	"github.com/marrow16/gowordladder/generator"
+	"github.com/marrow16/gowordladder/words"
 	"math"
 	"slices"
 	"strconv"
@@ -23,6 +24,7 @@ type viewPlay struct {
 	dictionary     *words.Dictionary
 	puzzle         generator.Puzzle
 	currentScore   float64
+	deducted       bool
 	hint           string
 	hintsGiven     map[string]bool
 	warning        string
@@ -38,15 +40,27 @@ const (
 	playFooterLines = 3
 )
 
+var deductedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF8000"))
+
 func (v *viewPlay) content(m *model) (string, *tea.Cursor) {
 	v.wordsDisplayed = make(wordPoints)
 	v.mousePositions = make(map[int][2]int)
 	var sb strings.Builder
-	sb.WriteString(headerStyle.Width(m.width).Render(center3(
-		m.width,
-		fmt.Sprintf(" Solutions: %d ", len(v.puzzle.Solutions)),
-		fmt.Sprintf("Current score: %.0f", v.currentScore),
-		fmt.Sprintf(" Max score: %.0f ", v.puzzle.MaxScore))))
+	sb.Grow(m.height * m.width)
+	if v.deducted {
+		sb.WriteString(headerStyle.Width(m.width).Render(center3(
+			m.width,
+			fmt.Sprintf(" Solutions: %d ", len(v.puzzle.Solutions)),
+			fmt.Sprintf("Current score: %.0f", v.currentScore),
+			fmt.Sprintf(" Max score: %.0f ", v.puzzle.MaxScore),
+			nil, &deductedStyle, &headerStyle)))
+	} else {
+		sb.WriteString(headerStyle.Width(m.width).Render(center3(
+			m.width,
+			fmt.Sprintf(" Solutions: %d ", len(v.puzzle.Solutions)),
+			fmt.Sprintf("Current score: %.0f", v.currentScore),
+			fmt.Sprintf(" Max score: %.0f ", v.puzzle.MaxScore))))
+	}
 	lines := playHeaderLines
 
 	var csr *tea.Cursor
@@ -112,7 +126,7 @@ func (v *viewPlay) content(m *model) (string, *tea.Cursor) {
 
 func (v *viewPlay) help() string {
 	const (
-		firstHelp   = ctrlHelp + ": Solutions  •  ?: Hint  •  " + ctrlFill + ": Fill  •  space: Clear"
+		firstHelp   = "space: Clear  •  ?: Hint  •  " + ctrlFill + ": Fill  •  " + ctrlHelp + ": Solutions"
 		secondHelp  = "\n" + ctrlNew + ": New  •  " + ctrlGenerate + ": Generate  •  " + ctrlSolver + ": Solver"
 		solvedHelp  = "\n" + ctrlNew + ": New  •  " + ctrlHelp + ": Solutions  •  " + ctrlGenerate + ": Generate"
 		defaultHelp = firstHelp + secondHelp
@@ -135,6 +149,7 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	v.hint = ""
 	v.warning = ""
 	v.wrong = ""
+	v.deducted = false
 	switch msg.String() {
 	case ctrlNew:
 		return v.generateNew()
@@ -143,6 +158,14 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 			v.hintDeduction(solutionsPeek)
 		}
 		m.showSolutions(v.puzzle.Solutions)
+	case home:
+		v.onStep = 0
+		v.onChar = 0
+		v.ensureCursorVisible(m)
+	case end:
+		v.onStep = len(v.entries) - 1
+		v.onChar = v.puzzle.WordLength - 1
+		v.ensureCursorVisible(m)
 	case up:
 		if v.onStep > 0 {
 			v.onStep--
@@ -563,20 +586,24 @@ func (v *viewPlay) hintDeduction(h hint) {
 	switch h {
 	case solutionsPeek:
 		v.currentScore = 0
+		v.deducted = true
 	case wordSuggest:
 		if !v.hintsGiven[strconv.Itoa(v.onStep)] {
 			v.hintsGiven[strconv.Itoa(v.onStep)] = true
 			v.currentScore = math.Floor(v.currentScore - v.puzzle.RungScore)
+			v.deducted = true
 		}
 	case wordPattern:
 		if !v.hintsGiven[strconv.Itoa(v.onStep)] {
 			v.hintsGiven[strconv.Itoa(v.onStep)] = true
 			v.currentScore = math.Floor(v.currentScore - v.puzzle.DeductionPatternHint)
+			v.deducted = true
 		}
 	case letter:
 		if !v.hintsGiven[strconv.Itoa(v.onStep)+":"+strconv.Itoa(v.onChar)] {
 			v.hintsGiven[strconv.Itoa(v.onStep)+":"+strconv.Itoa(v.onChar)] = true
 			v.currentScore = math.Floor(v.currentScore - v.puzzle.DeductionPositionHint)
+			v.deducted = true
 		}
 	}
 	if v.currentScore < 0 {
@@ -601,6 +628,7 @@ func (v *viewPlay) start(puzzle generator.Puzzle, dict *words.Dictionary) {
 	v.hint = ""
 	v.warning = ""
 	v.wrong = ""
+	v.deducted = false
 	v.hintsGiven = make(map[string]bool)
 	v.solved = false
 	v.okWords = make(map[int]bool)

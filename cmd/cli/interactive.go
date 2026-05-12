@@ -3,9 +3,9 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"gowordladder/generator"
-	"gowordladder/solving"
-	"gowordladder/words"
+	"github.com/marrow16/gowordladder/generator"
+	"github.com/marrow16/gowordladder/solving"
+	"github.com/marrow16/gowordladder/words"
 	"math/rand"
 	"os"
 	"strconv"

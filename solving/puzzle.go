@@ -1,6 +1,6 @@
 package solving
 
-import "gowordladder/words"
+import "github.com/marrow16/gowordladder/words"
 
 type Puzzle struct {
 	startWord *words.Word
