@@ -64,6 +64,15 @@ func (v *viewHelp) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 		if v.offsetY < len(v.cachedLines)-m.height+10 {
 			v.offsetY++
 		}
+	case home:
+		v.offsetY = 0
+	case pageUp:
+		v.offsetY -= m.height - 4
+		if v.offsetY < 0 {
+			v.offsetY = 0
+		}
+	case pageDown:
+		v.offsetY += m.height - 4
 	}
 	return nil
 }
