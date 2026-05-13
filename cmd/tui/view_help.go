@@ -2,6 +2,8 @@ package main
 
 import (
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"github.com/marrow16/gowordladder/words"
 	"strings"
 )
 
@@ -31,9 +33,15 @@ func (v *viewHelp) content(m *model) (string, *tea.Cursor) {
 		v.cachedLines = helpText.render(m.width)
 		v.cachedWidth = m.width
 	}
-	for l := 0; l < maxLines && (l+v.offsetY) < len(v.cachedLines); l++ {
+	useLines := append(v.cachedLines,
+		helpStyle.Render(" "+strings.Repeat(horizontal, m.width-2)+" "),
+		helpHeaderStyle.Width(m.width).Render("Current Dictionary"),
+		highlightStyle.Width(m.width).AlignHorizontal(lipgloss.Center).Render(" "+words.CurrentDictionary()),
+		helpStyle.Width(m.width).Render(" "+fSwitch+": Switch"),
+	)
+	for l := 0; l < maxLines && (l+v.offsetY) < len(useLines); l++ {
 		sb.WriteString("\n")
-		sb.WriteString(v.cachedLines[l+v.offsetY])
+		sb.WriteString(useLines[l+v.offsetY])
 		lines++
 	}
 	sb.WriteString(padLines(m.height - lines - footerLines))

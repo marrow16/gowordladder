@@ -9,10 +9,11 @@ import (
 )
 
 type prefs struct {
-	WordLength   int         `json:"wordLength"`
-	LadderLength int         `json:"ladderLength"`
-	HighScores   []highScore `json:"highScores,omitempty"`
-	MaxScores    int         `json:"maxScores"`
+	WordLength       int         `json:"wordLength"`
+	LadderLength     int         `json:"ladderLength"`
+	HighScores       []highScore `json:"highScores,omitempty"`
+	MaxScores        int         `json:"maxScores"`
+	UsedDictionaries []string    `json:"usedDictionaries"`
 }
 type highScore struct {
 	Score        float64 `json:"score"`

@@ -15,6 +15,8 @@ type Dictionary struct {
 	wordLength   int
 	words        map[string]*Word
 	wordsBySteps map[int][]*Word
+	Islands      []*Word
+	Doublets     []*Word
 	variations   variations
 	maxSteps     int
 }
@@ -106,6 +108,11 @@ func (d *Dictionary) addWord(line string, builder variations) {
 			for i := 3; i <= maxSteps; i++ {
 				d.wordsBySteps[i] = append(d.wordsBySteps[i], w)
 			}
+			if maxSteps == 1 {
+				d.Islands = append(d.Islands, w)
+			} else if maxSteps == 2 {
+				d.Doublets = append(d.Doublets, w)
+			}
 			builder.link(w)
 		} else {
 			panic(fmt.Sprintf("invalid word input (word length): %q", line))
@@ -144,6 +151,30 @@ func CurrentDictionary() string {
 	return useDictionary
 }
 
+func SwitchCurrentDictionary(source string) error {
+	var err error
+	if internal := strings.ToLower(source); internal == "csw19" || internal == "csw24" || internal == "enwiktionary" || internal == "default" {
+		if internal == "default" {
+			internal = defaultDictionary
+		}
+		useDictionary = internal
+		dictFs = &embeddedDictionaryFs{resources.Files}
+	} else {
+		var xfs dictionaryFs
+		xfs, err = newExternalDictionaryFs(source)
+		if err == nil {
+			useDictionary = source
+			dictFs = xfs
+		}
+	}
+	if err == nil {
+		cache.mutex.Lock()
+		defer cache.mutex.Unlock()
+		cache.dictionaries = make(map[int]*Dictionary)
+	}
+	return err
+}
+
 var (
 	once          sync.Once
 	cache         *dictionaryCache
@@ -155,7 +186,10 @@ func init() {
 	once.Do(func() {
 		cache = &dictionaryCache{dictionaries: map[int]*Dictionary{}}
 		if n, ok := os.LookupEnv(envDictionary); ok {
-			if internal := strings.ToLower(n); internal == "csw19" || internal == "csw24" || internal == "enwiktionary" {
+			if internal := strings.ToLower(n); internal == "csw19" || internal == "csw24" || internal == "enwiktionary" || internal == "default" {
+				if internal == "default" {
+					internal = defaultDictionary
+				}
 				useDictionary = internal
 			} else if xsf, err := newExternalDictionaryFs(n); err == nil {
 				useDictionary = n

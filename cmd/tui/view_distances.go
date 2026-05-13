@@ -21,7 +21,7 @@ type viewDistances struct {
 func (v *viewDistances) content(m *model) (string, *tea.Cursor) {
 	const (
 		prompt      = " Word: "
-		footerLines = 2
+		footerLines = 3
 	)
 	v.wordsDisplayed = make(wordPoints)
 	var sb strings.Builder
@@ -37,62 +37,84 @@ func (v *viewDistances) content(m *model) (string, *tea.Cursor) {
 			sb.WriteString(" " + errorStyle.Render("Word not in my dictionary") + "\n")
 			lines++
 		} else {
-			sb.WriteString(" " + boldStyle.Render(v.distancesResult.word) + fmt.Sprintf(" Max ladder length: %d  Max words: %d (@%d)\n", v.distancesResult.maxLadderLength, v.distancesResult.maxWords, v.distancesResult.maxWordsAt))
-			lines++
-			colWd := v.distancesResult.wordLength + 2
-			colWd += 2
-			hFmt := " %" + strconv.Itoa(colWd-4) + "d   "
-			lmWd := len(strconv.Itoa(v.distancesResult.maxWords))
-			lmFmt := " %" + strconv.Itoa(lmWd) + "d "
-			sb.WriteString(strings.Repeat(" ", lmWd+2))
-			wd := lmWd + 2
-			for c := 0; c < v.distancesResult.maxLadderLength && (c+v.offsetX) < v.distancesResult.maxLadderLength && (wd+colWd) < m.width; c++ {
-				col := c + v.offsetX + 1
-				sb.WriteString(helpStyle.Render(fmt.Sprintf(hFmt, col)))
-				wd += colWd
-			}
-			sb.WriteString("\n")
-			lines++
-			if v.offsetY < 1 {
-				sb.WriteString(strings.Repeat(" ", lmWd+1))
-				wd = lmWd + 1
-				for c := 0; c < v.distancesResult.maxLadderLength && (c+v.offsetX) < v.distancesResult.maxLadderLength && (wd+colWd) < m.width; c++ {
-					sb.WriteString(" ")
-					sb.WriteString(helpStyle.Render(topLeft + strings.Repeat(horizontal, v.distancesResult.wordLength) + topRight))
-					sb.WriteString(" ")
-					wd += colWd
+			skipDisplay := false
+			if v.distancesResult.mode == distancesNormal {
+				switch v.distancesResult.maxLadderLength {
+				case 1:
+					sb.WriteString(" " + boldStyle.Render(v.distancesResult.word) + helpStyle.Render(" is an island word (no ladders)\n"))
+					skipDisplay = true
+				case 2:
+					sb.WriteString(" " + boldStyle.Render(v.distancesResult.word) + fmt.Sprintf(" Max ladder length: %d\n", v.distancesResult.maxLadderLength))
+				default:
+					sb.WriteString(" " + boldStyle.Render(v.distancesResult.word) + fmt.Sprintf(" Max ladder length: %d  Max words: %d (@%d)\n", v.distancesResult.maxLadderLength, v.distancesResult.maxWords, v.distancesResult.maxWordsAt))
 				}
-				sb.WriteString("\n")
-				lines++
+			} else if len(v.distancesResult.distances[1]) == 0 {
+				skipDisplay = true
+				sb.WriteString(" " + boldStyle.Render(v.distancesResult.word+": ") + helpStyle.Render(fmt.Sprintf("None for word length %d\n", v.distancesResult.wordLength)))
+			} else {
+				sb.WriteString(" " + boldStyle.Render(v.distancesResult.word+": ") + highlightStyle.Render(commas(len(v.distancesResult.distances[1]))) + fmt.Sprintf(" words (for word length %d)\n", v.distancesResult.wordLength))
 			}
-			maxLines := m.height - lines - footerLines
-			for ll := 0; ll < maxLines; ll++ {
-				wn := ll + v.offsetY
-				if wn < v.distancesResult.maxWords {
-					sb.WriteString(helpStyle.Render(fmt.Sprintf(lmFmt, wn+1)))
-				} else {
-					sb.WriteString(strings.Repeat(" ", lmWd+2))
-				}
-				wd = lmWd + 1
-				for c := 0; c < v.distancesResult.maxLadderLength && (c+v.offsetX) < v.distancesResult.maxLadderLength && (wd+colWd) < m.width; c++ {
-					cll := c + v.offsetX + 1
-					wds := v.distancesResult.distances[cll]
-					switch {
-					case wn < len(wds):
-						sb.WriteString(helpStyle.Render(vertical))
-						sb.WriteString(wds[wn])
-						sb.WriteString(helpStyle.Render(vertical))
-						v.wordsDisplayed.addWord(wds[wn], lines, wd+2)
-					case wn == len(wds):
-						sb.WriteString(helpStyle.Render(bottomLeft + strings.Repeat(horizontal, v.distancesResult.wordLength) + bottomRight))
-					default:
-						sb.WriteString(strings.Repeat(" ", v.distancesResult.wordLength+2))
+			lines++
+			if !skipDisplay {
+				colWd := v.distancesResult.wordLength + 2
+				colWd += 2
+				hFmt := " %" + strconv.Itoa(colWd-4) + "d   "
+				lmWd := len(strconv.Itoa(v.distancesResult.maxWords))
+				lmFmt := " %" + strconv.Itoa(lmWd) + "d "
+				sb.WriteString(strings.Repeat(" ", lmWd+2))
+				wd := lmWd + 2
+				if v.distancesResult.mode == distancesNormal {
+					for c := 0; c < v.distancesResult.maxLadderLength && (c+v.offsetX) < v.distancesResult.maxLadderLength && (wd+colWd) < m.width; c++ {
+						col := c + v.offsetX + 1
+						sb.WriteString(helpStyle.Render(fmt.Sprintf(hFmt, col)))
+						wd += colWd
 					}
-					sb.WriteString("  ")
-					wd += colWd
+				} else {
+					sb.WriteString(v.distancesResult.word)
 				}
 				sb.WriteString("\n")
 				lines++
+				if v.offsetY < 1 {
+					sb.WriteString(strings.Repeat(" ", lmWd+1))
+					wd = lmWd + 1
+					for c := 0; c < v.distancesResult.maxLadderLength && (c+v.offsetX) < v.distancesResult.maxLadderLength && (wd+colWd) < m.width; c++ {
+						sb.WriteString(" ")
+						sb.WriteString(helpStyle.Render(topLeft + strings.Repeat(horizontal, v.distancesResult.wordLength) + topRight))
+						sb.WriteString(" ")
+						wd += colWd
+					}
+					sb.WriteString("\n")
+					lines++
+				}
+				maxLines := m.height - lines - footerLines
+				for ll := 0; ll < maxLines; ll++ {
+					wn := ll + v.offsetY
+					if wn < v.distancesResult.maxWords {
+						sb.WriteString(helpStyle.Render(fmt.Sprintf(lmFmt, wn+1)))
+					} else {
+						sb.WriteString(strings.Repeat(" ", lmWd+2))
+					}
+					wd = lmWd + 1
+					for c := 0; c < v.distancesResult.maxLadderLength && (c+v.offsetX) < v.distancesResult.maxLadderLength && (wd+colWd) < m.width; c++ {
+						cll := c + v.offsetX + 1
+						wds := v.distancesResult.distances[cll]
+						switch {
+						case wn < len(wds):
+							sb.WriteString(helpStyle.Render(vertical))
+							sb.WriteString(wds[wn])
+							sb.WriteString(helpStyle.Render(vertical))
+							v.wordsDisplayed.addWord(wds[wn], lines, wd+2)
+						case wn == len(wds):
+							sb.WriteString(helpStyle.Render(bottomLeft + strings.Repeat(horizontal, v.distancesResult.wordLength) + bottomRight))
+						default:
+							sb.WriteString(strings.Repeat(" ", v.distancesResult.wordLength+2))
+						}
+						sb.WriteString("  ")
+						wd += colWd
+					}
+					sb.WriteString("\n")
+					lines++
+				}
 			}
 		}
 	}
@@ -101,11 +123,16 @@ func (v *viewDistances) content(m *model) (string, *tea.Cursor) {
 }
 
 func (v *viewDistances) help() string {
-	return "enter: Lookup  •  " + back + ": Back"
+	//	return "enter: Lookup  •  " + back + ": Back"
+	return "enter: Lookup  •  1: Islands  •  2: Doublets\n" + back + ": Back"
 }
 
 func (v *viewDistances) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
+	case "1":
+		return v.doIslands()
+	case "2":
+		return v.doDoublets()
 	case back:
 		m.restoreView(distances, v.backMode, v.backView)
 		return nil
@@ -114,7 +141,7 @@ func (v *viewDistances) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 		v.offsetX = 0
 	case end:
 		if v.distancesResult != nil {
-			v.offsetY = v.distancesResult.maxWords + 9 - m.height
+			v.offsetY = v.distancesResult.maxWords + 10 - m.height
 			if v.offsetY < 0 {
 				v.offsetY = 0
 			}
@@ -186,7 +213,7 @@ func (v *viewDistances) click(m *model, msg tea.Mouse) tea.Cmd {
 			return m.lookupWord(s)
 		}
 		return nil
-	} else if msg.Y == 4 && msg.X > 0 && v.distancesResult != nil {
+	} else if msg.Y == 4 && msg.X > 0 && v.distancesResult != nil && v.distancesResult.mode == distancesNormal {
 		if msg.X < v.distancesResult.wordLength+1 {
 			return m.lookupWord(v.distancesResult.word)
 		} else {
@@ -210,7 +237,9 @@ func (v *viewDistances) click(m *model, msg tea.Mouse) tea.Cmd {
 
 func (v *viewDistances) update(m *model, msg tea.Msg) tea.Cmd {
 	if dr, ok := msg.(distancesResult); ok {
-		v.input.set(dr.word)
+		if dr.mode == distancesNormal {
+			v.input.set(dr.word)
+		}
 		v.distancesResult = &dr
 	}
 	return nil
@@ -243,6 +272,14 @@ func (v *viewDistances) lookupWord(word string, backMode mode, backView view) te
 	return v.doLookup()
 }
 
+type distancesMode int
+
+const (
+	distancesNormal distancesMode = iota
+	distancesIslands
+	distancesDoublets
+)
+
 type distancesResult struct {
 	word            string
 	inDictionary    bool
@@ -251,6 +288,7 @@ type distancesResult struct {
 	maxWords        int
 	maxWordsAt      int
 	distances       map[int][]string
+	mode            distancesMode
 }
 
 func (v *viewDistances) doLookup() tea.Cmd {
@@ -294,6 +332,62 @@ func (v *viewDistances) doLookupWord(s string) tea.Cmd {
 				}
 			} else {
 				return distancesResult{word: s, inDictionary: false}
+			}
+		}
+	}
+	return nil
+}
+
+func (v *viewDistances) doIslands() tea.Cmd {
+	if l := len(v.input.value()); l >= 2 {
+		v.distancesResult = nil
+		v.offsetX = 0
+		v.offsetY = 0
+		return func() tea.Msg {
+			dict := words.NewDictionary(l)
+			islands := make([]string, len(dict.Islands))
+			for i, island := range dict.Islands {
+				islands[i] = island.String()
+			}
+			return distancesResult{
+				word:            "Islands",
+				inDictionary:    true,
+				wordLength:      l,
+				maxLadderLength: 1,
+				maxWords:        len(islands),
+				maxWordsAt:      1,
+				distances: map[int][]string{
+					1: islands,
+				},
+				mode: distancesIslands,
+			}
+		}
+	}
+	return nil
+}
+
+func (v *viewDistances) doDoublets() tea.Cmd {
+	if l := len(v.input.value()); l >= 2 {
+		v.distancesResult = nil
+		v.offsetX = 0
+		v.offsetY = 0
+		return func() tea.Msg {
+			dict := words.NewDictionary(l)
+			doublets := make([]string, len(dict.Doublets))
+			for i, doublet := range dict.Doublets {
+				doublets[i] = doublet.String()
+			}
+			return distancesResult{
+				word:            "Doublets",
+				inDictionary:    true,
+				wordLength:      l,
+				maxLadderLength: 1,
+				maxWords:        len(doublets),
+				maxWordsAt:      1,
+				distances: map[int][]string{
+					1: doublets,
+				},
+				mode: distancesDoublets,
 			}
 		}
 	}

@@ -158,3 +158,45 @@ func isAllDigits(s string) bool {
 	}
 	return true
 }
+
+type stringInput struct {
+	maxWidth int
+	current  string
+}
+
+func (i *stringInput) render() (string, int) {
+	show := i.current
+	if len(show) >= i.maxWidth {
+		show = show[len(show)-i.maxWidth+1:]
+	}
+	cp := len(show)
+	if cp < i.maxWidth {
+		show += strings.Repeat(" ", i.maxWidth-cp)
+	}
+	return inputStyle.Render(show), cp
+}
+
+func (i *stringInput) key(msg tea.KeyPressMsg) bool {
+	k := strings.ToLower(msg.String())
+	switch {
+	case k == backspace && len(i.current) > 0:
+		i.current = i.current[:len(i.current)-1]
+		return true
+	case len(k) == 1 && k >= " " && k <= "~":
+		i.current += k
+		return true
+	}
+	return false
+}
+
+func (i *stringInput) value() string {
+	return i.current
+}
+
+func (i *stringInput) set(val string) {
+	i.current = val
+}
+
+func (i *stringInput) paste(msg tea.PasteMsg) {
+	i.current = msg.Content
+}

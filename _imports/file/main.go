@@ -79,7 +79,7 @@ func main() {
 			return nil
 		})
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "unable to procss - %s", err.Error())
+			fmt.Fprintf(os.Stderr, "unable to process - %s", err.Error())
 			os.Exit(1)
 		}
 	}

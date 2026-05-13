@@ -41,4 +41,5 @@ const (
 	exit           = "esc"
 	fHelp          = "f1"
 	backChar       = "«"
+	fSwitch        = "f2"
 )

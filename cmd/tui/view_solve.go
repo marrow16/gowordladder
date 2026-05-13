@@ -283,7 +283,7 @@ func (v *viewSolve) enterEndWord(m *model) tea.Cmd {
 						},
 					}
 				} else {
-					return solveEnterResult{err: fmt.Sprintf("Cannot reach %q from %q", v.endWord, v.startWord)}
+					return solveEnterResult{err: fmt.Sprintf("Cannot reach %q from %q", s, v.startWord)}
 				}
 			} else {
 				return solveEnterResult{err: "Word not in dictionary"}

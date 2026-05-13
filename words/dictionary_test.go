@@ -3,6 +3,7 @@ package words
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -66,6 +67,23 @@ func TestDictionaryFromFactorySameAsConstructed(t *testing.T) {
 	newDict := NewDictionary(3)
 	dictFromFactory := NewDictionary(3)
 	assert.Equal(t, newDict, dictFromFactory)
+}
+
+func TestSwitchCurrentDictionary(t *testing.T) {
+	defer SwitchCurrentDictionary(defaultDictionary)
+
+	d := NewDictionary(3)
+	assert.Equal(t, 1351, d.Len())
+
+	err := SwitchCurrentDictionary("enwiktionary")
+	require.NoError(t, err)
+	d = NewDictionary(3)
+	assert.Equal(t, 2573, d.Len())
+
+	err = SwitchCurrentDictionary("./resources/csw19-")
+	require.NoError(t, err)
+	d = NewDictionary(3)
+	assert.Equal(t, 1347, d.Len())
 }
 
 func TestFailsToLoadInvalidWordLengths(t *testing.T) {

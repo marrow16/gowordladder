@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	enWiktionaryLlatest = "https://dumps.wikimedia.org/enwiktionary/latest/enwiktionary-latest-pages-articles.xml.bz2"
-	stage1Fmt           = "enwiktionary-%d-letters.txt.tmp"
-	stage2Fmt           = "enwiktionary-%d-letters.txt"
+	enWiktionaryLatest = "https://dumps.wikimedia.org/enwiktionary/latest/enwiktionary-latest-pages-articles.xml.bz2"
+	stage1Fmt          = "enwiktionary-%d-letters.txt.tmp"
+	stage2Fmt          = "enwiktionary-%d-letters.txt"
 )
 
 func main() {
@@ -84,7 +84,7 @@ func stage2() error {
 }
 
 func stage1() error {
-	fmt.Printf("Reading wiktionary from %q\n", enWiktionaryLlatest)
+	fmt.Printf("Reading wiktionary from %q\n", enWiktionaryLatest)
 	files := make(map[int]*os.File)
 	var resp *http.Response
 	defer func() {
@@ -95,7 +95,7 @@ func stage1() error {
 			file.Close()
 		}
 	}()
-	resp, err := http.Get(enWiktionaryLlatest)
+	resp, err := http.Get(enWiktionaryLatest)
 	if err != nil {
 		return err
 	}

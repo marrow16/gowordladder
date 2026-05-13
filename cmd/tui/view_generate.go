@@ -202,15 +202,7 @@ func (v *viewGenerate) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	v.currentError = ""
 	switch msg.String() {
 	case ctrlNew:
-		v.currentInput = nil
-		v.currentError = ""
-		v.wasWordLen, v.wasLadderLen = v.wordLen, v.ladderLen
-		v.wordLen = 0
-		v.ladderLen = 0
-		v.startWord = nil
-		v.endWord = nil
-		v.puzzle = nil
-		v.step = generateWordLength
+		v.reset(m)
 	case ctrlPlay:
 		if v.puzzle != nil {
 			m.play(*v.puzzle)
@@ -270,6 +262,19 @@ func (v *viewGenerate) paste(m *model, msg tea.PasteMsg) {
 	if v.currentInput != nil {
 		v.currentInput.paste(msg)
 	}
+}
+
+func (v *viewGenerate) reset(m *model) {
+	v.currentInput = nil
+	v.currentError = ""
+	v.wasWordLen, v.wasLadderLen = v.wordLen, v.ladderLen
+	v.wordLen = 0
+	v.ladderLen = 0
+	v.startWord = nil
+	v.endWord = nil
+	v.puzzle = nil
+	v.step = generateWordLength
+	v.currentInput = nil
 }
 
 type generateEnterResult struct {

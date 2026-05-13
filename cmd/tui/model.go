@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"math/rand"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -26,6 +27,7 @@ const (
 	lookup
 	distances
 	highs
+	switchDict
 	help
 )
 
@@ -45,6 +47,8 @@ func (m mode) String() string {
 		return "Word Distances"
 	case highs:
 		return "High Scores"
+	case switchDict:
+		return "Switch Dictionary"
 	case help:
 		return "Help"
 	}
@@ -53,7 +57,7 @@ func (m mode) String() string {
 
 func (m mode) canBack() bool {
 	switch m {
-	case help, solutions, highs, lookup, distances:
+	case help, solutions, highs, lookup, distances, switchDict:
 		return true
 	}
 	return false
@@ -76,6 +80,9 @@ type viewPasteable interface {
 type viewClickable interface {
 	click(m *model, msg tea.Mouse) tea.Cmd
 }
+type viewResettable interface {
+	reset(m *model)
+}
 
 type model struct {
 	logger      *slog.Logger
@@ -85,13 +92,14 @@ type model struct {
 	height      int
 	currentView view
 	// mode views...
-	viewSolve     view
-	viewGenerate  view
-	viewPlay      playView
-	viewSolutions solutionsView
-	viewScores    scoresView
-	viewHelp      helpView
-	lookupViews   []lookupView
+	viewSolve      view
+	viewGenerate   view
+	viewPlay       playView
+	viewSolutions  solutionsView
+	viewScores     scoresView
+	viewDictSwitch switchView
+	viewHelp       helpView
+	lookupViews    []lookupView
 
 	dictionary          *words.Dictionary
 	dictionaryLoadTimes map[int]time.Duration
@@ -125,6 +133,7 @@ func newModel(withLogging bool) *model {
 		viewPlay:            pv,
 		viewSolutions:       &viewSolutions{},
 		viewScores:          &viewScores{},
+		viewDictSwitch:      &viewSwitch{},
 		viewHelp:            &viewHelp{},
 		dictionaryLoadTimes: map[int]time.Duration{},
 	}
@@ -142,6 +151,27 @@ func (m *model) Init() tea.Cmd {
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch mt := msg.(type) {
+	case switchDictionaryResult:
+		if mt.err == nil {
+			m.dictionaryLoadTimes = make(map[int]time.Duration)
+			if m.dictionary != nil {
+				wl := m.dictionary.WordLength()
+				m.dictionary = nil
+				m.loadDictionary(wl)
+			}
+			if !slices.Contains(m.prefs.UsedDictionaries, mt.source) {
+				m.prefs.UsedDictionaries = append(m.prefs.UsedDictionaries, mt.source)
+				m.prefs.save()
+			}
+			m.currentView = m.viewGenerate
+			m.mode = generate
+			if rv, ok := m.currentView.(viewResettable); ok {
+				rv.reset(m)
+			}
+			m.lookupViews = make([]lookupView, 0)
+		} else {
+			m.currentView.update(m, mt)
+		}
 	case tea.WindowSizeMsg:
 		m.width = mt.Width
 		m.height = mt.Height
@@ -186,12 +216,16 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case fHelp:
 			m.showHelp()
+		case fSwitch:
+			if m.mode != switchDict {
+				m.viewDictSwitch.show(m.mode, m.currentView)
+				m.mode = switchDict
+				m.currentView = m.viewDictSwitch
+			}
 		case ctrlWord:
-			cmd := m.lookupWord(m.currentView.currentWord())
-			return m, cmd
+			return m, m.lookupWord(m.currentView.currentWord())
 		case ctrlDistances:
-			cmd := m.lookupDistance(m.currentView.currentWord())
-			return m, cmd
+			return m, m.lookupDistance(m.currentView.currentWord())
 		case ctrlHighScores:
 			if m.mode != highs {
 				m.viewScores.show(m.mode, m.currentView)
@@ -318,6 +352,20 @@ func (m *model) restoreView(fm mode, rm mode, rv view) {
 	m.mode = rm
 	if (fm == lookup || fm == distances) && len(m.lookupViews) > 0 {
 		m.lookupViews = m.lookupViews[:len(m.lookupViews)-1]
+	}
+}
+
+type switchDictionaryResult struct {
+	err    error
+	source string
+}
+
+func (m *model) switchDictionary(source string) tea.Cmd {
+	return func() tea.Msg {
+		return switchDictionaryResult{
+			err:    words.SwitchCurrentDictionary(source),
+			source: source,
+		}
 	}
 }
 
