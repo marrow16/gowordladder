@@ -2,7 +2,9 @@ package main
 
 import (
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"fmt"
+	"github.com/marrow16/gowordladder/cmd/tui/layout"
 	"github.com/marrow16/gowordladder/generator"
 	"github.com/marrow16/gowordladder/words"
 	"slices"
@@ -51,25 +53,19 @@ func (v *viewGenerate) currentWord() string {
 	return ""
 }
 
-func (v *viewGenerate) content(m *model) (string, *tea.Cursor) {
+func (v *viewGenerate) render(sf layout.Surface, m *model) *tea.Cursor {
 	const (
-		promptWordLength   = "   Word length: "
-		promptLadderLength = " Ladder length: "
-		promptStartWord    = "    Start word: "
-		promptEndWord      = "      End word: "
-		promptLen          = len(promptEndWord)
-		footerLines        = 3
+		promptWordLength   = "Word length:"
+		promptLadderLength = "Ladder length:"
+		promptStartWord    = "Start word:"
+		promptEndWord      = "End word:"
+		promptLen          = len(promptLadderLength)
 	)
 	v.wordsDisplayed = make(wordPoints)
-	var sb strings.Builder
-	sb.Grow(m.height * m.width)
-	sb.WriteString("\n")
-	lines := 1
-	cpx := -1
-	var s string
+	var csr *tea.Cursor
 	switch v.step {
 	case generateWordLength:
-		sb.WriteString(promptWordLength)
+		sf.TextRight(1, 1, promptLen, promptWordLength)
 		if v.currentInput == nil {
 			initial := strconv.Itoa(m.prefs.WordLength)
 			if v.wasWordLen > 0 {
@@ -77,18 +73,17 @@ func (v *viewGenerate) content(m *model) (string, *tea.Cursor) {
 			}
 			v.currentInput = &numberInput{maxLength: 2, current: initial}
 		}
-		s, cpx = v.currentInput.render()
-		sb.WriteString(s)
+		sf.TextFixed(1, promptLen+2, 2, v.currentInput.value(), inputStyle)
+		csr = tea.NewCursor(promptLen+v.currentInput.cursorPos()+2, 2)
 		if v.currentError != "" {
-			sb.WriteString(errorStyle.Render("  " + v.currentError))
+			sf.Text(1, promptLen+6, v.currentError, errorStyle)
 		} else {
-			sb.WriteString(helpStyle.Render("  (enter a number 2-15)"))
+			sf.Text(1, promptLen+6, "(enter a number 2-15)", helpStyle)
 		}
-		lines++
 	case generateLadderLength:
-		sb.WriteString(promptWordLength)
-		sb.WriteString(inputStyle.Width(2).Render(fmt.Sprintf("%2d", v.wordLen)))
-		sb.WriteString("\n" + promptLadderLength)
+		sf.TextRight(1, 1, promptLen, promptWordLength)
+		sf.TextFixed(1, promptLen+2, 2, strconv.Itoa(v.wordLen), inputStyle)
+		sf.TextRight(2, 1, promptLen, promptLadderLength)
 		if v.currentInput == nil {
 			initial := strconv.Itoa(m.prefs.LadderLength)
 			if v.wasLadderLen > 0 {
@@ -96,105 +91,108 @@ func (v *viewGenerate) content(m *model) (string, *tea.Cursor) {
 			}
 			v.currentInput = &numberInput{maxLength: 2, current: initial}
 		}
-		s, cpx = v.currentInput.render()
-		sb.WriteString(s)
+		sf.TextFixed(2, promptLen+2, 2, v.currentInput.value(), inputStyle)
+		csr = tea.NewCursor(promptLen+v.currentInput.cursorPos()+2, 3)
 		if v.currentError != "" {
-			sb.WriteString(errorStyle.Render("  " + v.currentError))
+			sf.Text(2, promptLen+6, v.currentError, errorStyle)
 		} else {
-			sb.WriteString(helpStyle.Render(fmt.Sprintf("  (enter a number 3-%d)", m.dictionary.MaxSteps())))
+			sf.Text(2, promptLen+6, "(enter a number 2-"+strconv.Itoa(m.dictionary.MaxSteps())+")", helpStyle)
 		}
-		lines += 2
 	case generateStartWord:
-		sb.WriteString(promptWordLength)
-		sb.WriteString(inputStyle.Width(2).Render(fmt.Sprintf("%2d", v.wordLen)))
-		sb.WriteString("\n" + promptLadderLength)
-		sb.WriteString(inputStyle.Width(2).Render(fmt.Sprintf("%2d", v.ladderLen)))
-		sb.WriteString("\n" + promptStartWord)
+		sf.TextRight(1, 1, promptLen, promptWordLength)
+		sf.TextFixed(1, promptLen+2, 2, strconv.Itoa(v.wordLen), inputStyle)
+		sf.TextRight(2, 1, promptLen, promptLadderLength)
+		sf.TextFixed(2, promptLen+2, 2, strconv.Itoa(v.ladderLen), inputStyle)
+		sf.TextRight(3, 1, promptLen, promptStartWord)
 		if v.currentInput == nil {
 			v.currentInput = &wordInput{maxLength: v.wordLen}
 		}
-		s, cpx = v.currentInput.render()
-		sb.WriteString(s)
+		sf.TextFixed(3, promptLen+2, v.wordLen, v.currentInput.value(), inputStyle)
+		csr = tea.NewCursor(promptLen+v.currentInput.cursorPos()+2, 4)
 		if v.currentError != "" {
-			sb.WriteString(errorStyle.Render("  " + v.currentError))
+			sf.Text(3, promptLen+4+v.wordLen, v.currentError, errorStyle)
 		} else {
-			sb.WriteString(helpStyle.Render("  (word, blank or '?' for random)"))
+			sf.Text(3, promptLen+4+v.wordLen, "(word, blank or '?' for random)", helpStyle)
 		}
-		lines += 3
 	case generateEndWord:
-		sb.WriteString(promptWordLength)
-		sb.WriteString(inputStyle.Width(2).Render(fmt.Sprintf("%2d", v.wordLen)))
-		sb.WriteString("\n" + promptLadderLength)
-		sb.WriteString(inputStyle.Width(2).Render(fmt.Sprintf("%2d", v.ladderLen)))
-		sb.WriteString("\n" + promptStartWord)
+		sf.TextRight(1, 1, promptLen, promptWordLength)
+		sf.TextFixed(1, promptLen+2, 2, strconv.Itoa(v.wordLen), inputStyle)
+		sf.TextRight(2, 1, promptLen, promptLadderLength)
+		sf.TextFixed(2, promptLen+2, 2, strconv.Itoa(v.ladderLen), inputStyle)
+		sf.TextRight(3, 1, promptLen, promptStartWord)
+		sw := ""
 		if v.startWord != nil {
-			sb.WriteString(inputStyle.Width(v.wordLen).Render(v.startWord.String()))
-			v.wordsDisplayed.addWord(v.startWord.String(), 4, promptLen)
-		} else {
-			sb.WriteString(inputStyle.Width(v.wordLen).Render(""))
+			sw = v.startWord.String()
 		}
-		sb.WriteString("\n" + promptEndWord)
+		v.wordsDisplayed.addWord(sw, 4, promptLen+2)
+		sf.TextFixed(3, promptLen+2, v.wordLen, sw, inputStyle)
+		sf.TextRight(4, 1, promptLen, promptEndWord)
 		if v.currentInput == nil {
 			v.currentInput = &wordInput{maxLength: v.wordLen}
 		}
-		s, cpx = v.currentInput.render()
-		sb.WriteString(s)
+		sf.TextFixed(4, promptLen+2, v.wordLen, v.currentInput.value(), inputStyle)
+		csr = tea.NewCursor(promptLen+v.currentInput.cursorPos()+2, 5)
 		if v.currentError != "" {
-			sb.WriteString(errorStyle.Render("  " + v.currentError))
+			sf.Text(4, promptLen+4+v.wordLen, v.currentError, errorStyle)
 		} else {
-			sb.WriteString(helpStyle.Render("  (word, blank or '?' for random)"))
+			sf.Text(4, promptLen+4+v.wordLen, "(word, blank or '?' for random)", helpStyle)
 		}
-		lines += 4
 	case generateGenerated:
-		sb.WriteString(promptWordLength)
-		sb.WriteString(inputStyle.Width(2).Render(fmt.Sprintf("%2d", v.wordLen)))
-		sb.WriteString("\n" + promptLadderLength)
-		sb.WriteString(inputStyle.Width(2).Render(fmt.Sprintf("%2d", v.ladderLen)))
-		sb.WriteString("\n" + promptStartWord)
+		sf.TextRight(1, 1, promptLen, promptWordLength)
+		sf.TextFixed(1, promptLen+2, 2, strconv.Itoa(v.wordLen), inputStyle)
+		sf.TextRight(2, 1, promptLen, promptLadderLength)
+		sf.TextFixed(2, promptLen+2, 2, strconv.Itoa(v.ladderLen), inputStyle)
+		sf.TextRight(3, 1, promptLen, promptStartWord)
+		sw := ""
 		if v.startWord != nil {
-			sb.WriteString(inputStyle.Width(v.wordLen).Render(v.startWord.String()))
-			v.wordsDisplayed.addWord(v.startWord.String(), 4, promptLen)
+			sw = v.startWord.String()
 		} else if v.puzzle != nil {
-			sb.WriteString(inputStyle.Width(v.wordLen).Render(v.puzzle.StartWord.String()))
-			v.wordsDisplayed.addWord(v.puzzle.StartWord.String(), 4, promptLen)
-		} else {
-			sb.WriteString(inputStyle.Width(v.wordLen).Render(""))
+			sw = v.puzzle.StartWord.String()
 		}
-		sb.WriteString("\n" + promptEndWord)
+		v.wordsDisplayed.addWord(sw, 4, promptLen+2)
+		sf.TextFixed(3, promptLen+2, v.wordLen, sw, inputStyle)
+		sf.TextRight(4, 1, promptLen, promptEndWord)
+		ew := ""
 		if v.endWord != nil {
-			sb.WriteString(inputStyle.Width(v.wordLen).Render(v.endWord.String()))
-			v.wordsDisplayed.addWord(v.endWord.String(), 5, promptLen)
+			ew = v.endWord.String()
 		} else if v.puzzle != nil {
-			sb.WriteString(inputStyle.Width(v.wordLen).Render(v.puzzle.EndWord.String()))
-			v.wordsDisplayed.addWord(v.puzzle.EndWord.String(), 5, promptLen)
-		} else {
-			sb.WriteString(inputStyle.Width(v.wordLen).Render(""))
+			ew = v.puzzle.EndWord.String()
 		}
-		lines += 4
+		v.wordsDisplayed.addWord(ew, 5, promptLen+2)
+		sf.TextFixed(4, promptLen+2, v.wordLen, ew, inputStyle)
 		if v.currentError != "" {
-			sb.WriteString(errorStyle.Render("\n\n  " + v.currentError))
-			lines += 2
+			sf.Text(6, 1, v.currentError, errorStyle)
 		} else {
-			sb.WriteString("\n\n  Took " + highlightStyle.Render(truncateDuration(v.puzzleGenerateTime)) + " to generate puzzle")
-			sb.WriteString("\n  Max score: " + highlightStyle.Render(fmt.Sprintf("%.0f", v.puzzle.MaxScore)))
-			sb.WriteString(" (" + highlightStyle.Render(commas(len(v.puzzle.Solutions))) + " solutions)")
-			lines += 3
+			sf.TextRun(6, 2, layout.NewRuns("Took ").Add(truncateDuration(v.puzzleGenerateTime), highlightStyle).Add(" to generate puzzle"))
+			sf.TextRun(7, 2, layout.NewRuns("Max score: ").
+				Add(strconv.FormatFloat(v.puzzle.MaxScore, 'f', 0, 64), highlightStyle).
+				Add(" (").Add(commas(len(v.puzzle.Solutions)), highlightStyle).Add(" solutions)"))
 		}
 	}
-
-	sb.WriteString(padLines(m.height - lines - footerLines))
-	var csr *tea.Cursor
-	if cpx > -1 {
-		csr = tea.NewCursor(promptLen+cpx, lines)
-	}
-	return sb.String(), csr
+	return csr
 }
 
-func (v *viewGenerate) help() string {
+func (v *viewGenerate) helpLines() ([]string, *lipgloss.Style) {
 	if v.step == generateGenerated {
-		return ctrlPlay + ": Play  •  enter: Solutions\n" + ctrlNew + ": New  •  " + ctrlSolver + ": Solver"
+		return []string{
+			ctrlPlay + ": Play  •  " + enter + ": Solutions",
+			ctrlNew + ": New  •  " + ctrlSolver + ": Solver",
+		}, nil
 	} else {
-		return "\n" + ctrlNew + ": New  •  " + ctrlSolver + ": Solver"
+		return []string{ctrlNew + ": New  •  " + ctrlSolver + ": Solver"}, nil
+	}
+}
+
+func (v *viewGenerate) menu() []menuItem {
+	if v.step == generateGenerated {
+		return []menuItem{
+			{text: "Play", key: ctrlPlay},
+			{text: "Solutions", key: enter},
+			{text: "New", key: ctrlNew},
+		}
+	}
+	return []menuItem{
+		{text: "New", key: ctrlNew},
 	}
 }
 

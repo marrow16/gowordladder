@@ -2,6 +2,8 @@ package main
 
 import (
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"github.com/marrow16/gowordladder/cmd/tui/layout"
 	"github.com/marrow16/gowordladder/words"
 	"slices"
 	"strings"
@@ -9,7 +11,7 @@ import (
 
 type switchView interface {
 	view
-	viewShow
+	viewShowable
 }
 
 type viewSwitch struct {
@@ -19,42 +21,31 @@ type viewSwitch struct {
 	currentError string
 }
 
-func (v *viewSwitch) content(m *model) (string, *tea.Cursor) {
+func (v *viewSwitch) render(sf layout.Surface, m *model) *tea.Cursor {
 	const (
-		prompt      = " Source: "
-		promptLen   = len(prompt)
-		footerLines = 3
+		prompt    = "Source:"
+		promptLen = len(prompt)
 	)
-	var sb strings.Builder
-	sb.Grow(m.width * m.height)
-	sb.WriteString("\n")
-	lines := 1
-	sb.WriteString(prompt)
-	v.input.maxWidth = m.width - promptLen - 1
-	s, cpx := v.input.render()
-	csr := tea.NewCursor(promptLen+cpx, 2)
-	sb.WriteString(s)
-	sb.WriteString("\n")
-	lines++
+	sf.TextRight(1, 0, promptLen+1, prompt)
+	iw := m.width - promptLen - 3
+	sf.TextFixed(1, promptLen+2, iw, v.input.value(), inputStyle)
+	v.input.maxWidth = iw
+	row := 3
 	if v.currentError != "" {
-		sb.WriteString(errorStyle.Width(m.width - promptLen - 2).Render(strings.Repeat(" ", promptLen) + v.currentError))
-		sb.WriteString("\n")
-		lines++
+		row += sf.TextWrapped(2, promptLen+2, iw, v.currentError, errorStyle)
 	}
-	sb.WriteString("\n")
-	sb.WriteString(helpStyle.Width(m.width-2).Render(" Press "+enter+" to switch.") + "\n")
-	sb.WriteString(helpStyle.Width(m.width-2).Render(" Use internal: \""+strings.Join(internalDicts, "\",\"")+"\".") + "\n")
-	sb.WriteString(helpStyle.Width(m.width-2).Render(" Or a filepath to dictionary files.") + "\n")
-	sb.WriteString("\n")
-	sb.WriteString(helpStyle.Width(m.width-2).Render("Use ↑/↓ keys to see previous entries.") + "\n")
-	lines += 5
-
-	sb.WriteString(padLines(m.height - lines - footerLines))
-	return sb.String(), csr
+	sf.TextCenter(row, 1, m.width-1, "Press "+enter+" to switch.", helpStyle)
+	sf.TextCenter(row+1, 1, m.width-2, "Use internal: \""+strings.Join(internalDicts, "\",\"")+"\".", helpStyle)
+	sf.TextCenter(row+2, 1, m.width-2, "Or a filepath to dictionary files.", helpStyle)
+	return tea.NewCursor(v.input.cursorPos()+promptLen+2, 2)
 }
 
-func (v *viewSwitch) help() string {
-	return back + ": Back"
+func (v *viewSwitch) helpLines() ([]string, *lipgloss.Style) {
+	return []string{back + ": Back"}, nil
+}
+
+func (v *viewSwitch) menu() []menuItem {
+	return nil
 }
 
 var internalDicts = []string{

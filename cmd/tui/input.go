@@ -7,7 +7,7 @@ import (
 )
 
 type input interface {
-	render() (string, int)
+	cursorPos() int
 	key(msg tea.KeyPressMsg) bool
 	value() string
 	set(val string)
@@ -20,17 +20,12 @@ type wordInput struct {
 	allowUnderscores bool
 }
 
-func (i *wordInput) render() (string, int) {
-	l := len(i.current)
-	cp := l
+func (i *wordInput) cursorPos() int {
+	cp := len(i.current)
 	if cp > i.maxLength {
 		cp -= 2
 	}
-	var pad string
-	if l < i.maxLength {
-		pad = strings.Repeat(" ", i.maxLength-l)
-	}
-	return inputStyle.Render(i.current + pad), cp
+	return cp
 }
 
 func (i *wordInput) key(msg tea.KeyPressMsg) bool {
@@ -84,17 +79,12 @@ type numberInput struct {
 	current   string
 }
 
-func (i *numberInput) render() (string, int) {
-	l := len(i.current)
-	cp := l
+func (i *numberInput) cursorPos() int {
+	cp := len(i.current)
 	if cp > i.maxLength {
 		cp -= 2
 	}
-	var pad string
-	if l < i.maxLength {
-		pad = strings.Repeat(" ", i.maxLength-l)
-	}
-	return inputStyle.Render(i.current + pad), cp
+	return cp
 }
 
 func (i *numberInput) key(msg tea.KeyPressMsg) bool {
@@ -164,16 +154,12 @@ type stringInput struct {
 	current  string
 }
 
-func (i *stringInput) render() (string, int) {
-	show := i.current
-	if len(show) >= i.maxWidth {
-		show = show[len(show)-i.maxWidth+1:]
+func (i *stringInput) cursorPos() int {
+	cp := len(i.current)
+	if cp >= i.maxWidth {
+		cp = i.maxWidth - 1
 	}
-	cp := len(show)
-	if cp < i.maxWidth {
-		show += strings.Repeat(" ", i.maxWidth-cp)
-	}
-	return inputStyle.Render(show), cp
+	return cp
 }
 
 func (i *stringInput) key(msg tea.KeyPressMsg) bool {

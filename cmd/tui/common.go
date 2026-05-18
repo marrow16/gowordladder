@@ -19,8 +19,9 @@ var (
 			Foreground(lipgloss.Color("#ffffff")).
 			Background(lipgloss.Color("#0000ff")).
 			AlignHorizontal(lipgloss.Center)
-	helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#aaaaaa")).
-			AlignHorizontal(lipgloss.Center)
+	headerSelectedStyle = headerStyle.Background(lipgloss.Color("#8080ff"))
+	helpStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color("#aaaaaa")).
+				AlignHorizontal(lipgloss.Center)
 	highlightStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#008000"))
 	errorStyle = lipgloss.NewStyle().

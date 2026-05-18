@@ -3,6 +3,7 @@ package main
 import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/marrow16/gowordladder/cmd/tui/layout"
 	"github.com/marrow16/gowordladder/generator"
 	"github.com/marrow16/gowordladder/solving"
 	"github.com/marrow16/gowordladder/words"
@@ -64,14 +65,15 @@ func (m mode) canBack() bool {
 }
 
 type view interface {
-	content(m *model) (string, *tea.Cursor)
-	help() string
+	render(surface layout.Surface, m *model) *tea.Cursor
+	helpLines() ([]string, *lipgloss.Style)
+	menu() []menuItem
 	key(m *model, msg tea.KeyPressMsg) tea.Cmd
 	update(m *model, msg tea.Msg) tea.Cmd
 	wordLength() int
 	currentWord() string
 }
-type viewShow interface {
+type viewShowable interface {
 	show(backMode mode, backView view)
 }
 type viewPasteable interface {
@@ -100,6 +102,7 @@ type model struct {
 	viewDictSwitch switchView
 	viewHelp       helpView
 	lookupViews    []lookupView
+	menu           *menu
 
 	dictionary          *words.Dictionary
 	dictionaryLoadTimes map[int]time.Duration
@@ -135,6 +138,7 @@ func newModel(withLogging bool) *model {
 		viewScores:          &viewScores{},
 		viewDictSwitch:      &viewSwitch{},
 		viewHelp:            &viewHelp{},
+		menu:                &menu{},
 		dictionaryLoadTimes: map[int]time.Duration{},
 	}
 }
@@ -150,6 +154,11 @@ func (m *model) Init() tea.Cmd {
 }
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if msg2, handled := m.menu.update(m, m.mode.canBack(), msg); handled {
+		return m, nil
+	} else {
+		msg = msg2
+	}
 	switch mt := msg.(type) {
 	case switchDictionaryResult:
 		if mt.err == nil {
@@ -178,17 +187,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.MouseClickMsg:
 		mmsg := mt.Mouse()
 		switch {
+		case mmsg.Button == tea.MouseLeft && mmsg.Y == 0 && mmsg.X >= m.width-2:
+			m.menu.toggle()
+			return m, nil
 		case mmsg.Button == tea.MouseLeft && mmsg.Y == 0 && mmsg.X < 3 && m.mode.canBack():
 			return m, m.currentView.key(m, tea.KeyPressMsg{Text: back})
-		case mmsg.Button == tea.MouseLeft && mmsg.Y == 0 && m.mode != help:
-			hxs, hxe := 1, len(helpHdr)
-			if m.mode == solutions || m.mode == lookup || m.mode == distances || m.mode == highs {
-				hxs += 2
-				hxe += 2
-			}
-			if mmsg.X >= hxs && mmsg.X <= hxe {
-				m.showHelp()
-			}
 		case mmsg.Y > 0:
 			if cv, ok := m.currentView.(viewClickable); ok {
 				return m, cv.click(m, mmsg)
@@ -217,11 +220,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case fHelp:
 			m.showHelp()
 		case fSwitch:
-			if m.mode != switchDict {
-				m.viewDictSwitch.show(m.mode, m.currentView)
-				m.mode = switchDict
-				m.currentView = m.viewDictSwitch
-			}
+			m.showDictionarySwitch()
 		case ctrlWord:
 			return m, m.lookupWord(m.currentView.currentWord())
 		case ctrlDistances:
@@ -232,6 +231,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.mode = highs
 				m.currentView = m.viewScores
 			}
+		case ctrlOpen:
+			if !m.menu.showing {
+				m.menu.toggle()
+			}
 		default:
 			if !m.viewSwitch(mt.String()) {
 				return m, m.currentView.key(m, mt)
@@ -241,6 +244,14 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.currentView.update(m, msg)
 	}
 	return m, nil
+}
+
+func (m *model) showDictionarySwitch() {
+	if m.mode != switchDict {
+		m.viewDictSwitch.show(m.mode, m.currentView)
+		m.mode = switchDict
+		m.currentView = m.viewDictSwitch
+	}
 }
 
 func (m *model) showHelp() {
@@ -275,39 +286,39 @@ func (m *model) View() tea.View {
 	if m.width == 0 || m.height == 0 {
 		return tea.View{AltScreen: true}
 	}
-	vc, csr := m.currentView.content(m)
-	content := lipgloss.JoinVertical(
-		lipgloss.Left,
-		m.headerView(),
-		vc,
-		m.footerView(),
-	)
-	v := tea.NewView(content)
+	sf := layout.NewSurface(m.height, m.width)
+	sf.LineColumns(0, 0, m.width, m.headerLine(), headerStyle)
+	footerLines, firstStyle := m.currentView.helpLines()
+	footerLines[len(footerLines)-1] = footerLines[len(footerLines)-1] + "  •  " + exit + ": Exit"
+	fh := len(footerLines)
+	for i, fl := range footerLines {
+		if i == 0 && firstStyle != nil {
+			sf.TextCenter(sf.Height()-fh+i, 1, m.width-2, fl, *firstStyle)
+		} else {
+			sf.TextCenter(sf.Height()-fh+i, 1, m.width-2, fl, helpStyle)
+		}
+	}
+	csr := m.currentView.render(sf.Region(1, 0, sf.Height()-fh-2, m.width), m)
+	if m.menu.draw(sf, m.currentView) {
+		csr = nil
+	}
+	v := tea.NewView(sf.Render())
 	v.Cursor = csr
 	v.AltScreen = true
 	v.MouseMode = tea.MouseModeCellMotion
 	return v
 }
 
-const helpHdr = fHelp + ":help"
-
-func (m *model) headerView() string {
-	hdr := "Go Word Ladder - " + m.mode.String()
-	switch {
-	case m.mode == help:
-		return headerStyle.Width(m.width).Render(center3(m.width, " "+backChar, hdr, ""))
-	case m.mode.canBack():
-		return headerStyle.Width(m.width).Render(center3(m.width, " "+backChar+" "+helpHdr, hdr, ""))
-	default:
-		return headerStyle.Width(m.width).Render(center3(m.width, " "+helpHdr, hdr, ""))
+func (m *model) headerLine() layout.Runs {
+	line := layout.Runs{
+		{Text: " "},
+		{Text: "Go Word Ladder - " + m.mode.String()},
+		{Text: menuChar + " "},
 	}
-}
-
-func (m *model) footerView() string {
-	if h := m.currentView.help(); h != "" {
-		return helpStyle.Width(m.width).Render(h + "  •  " + exit + ": Exit")
+	if m.mode.canBack() {
+		line[0] = layout.RunItem{Text: " " + backChar}
 	}
-	return helpStyle.Width(m.width).Render(exit + ": Exit")
+	return line
 }
 
 func (m *model) loadDictionary(wordLength int) *words.Dictionary {
@@ -391,73 +402,6 @@ func (m *model) lookupDistance(word string) tea.Cmd {
 		return cmd
 	}
 	return nil
-}
-
-func center3(wd int, left, mid, right string, styles ...*lipgloss.Style) string {
-	ll, lm, lr := len(left), len(mid), len(right)
-	lmw := lm / 2
-	rmw := lm - lmw
-	lw := wd / 2
-	rw := wd - lw
-	lpad, rpad := "", ""
-	if w := lw - lmw - ll; w > 0 {
-		lpad = strings.Repeat(" ", w)
-	}
-	if w := rw - rmw - lr; w > 0 {
-		rpad = strings.Repeat(" ", w)
-	}
-	var sb strings.Builder
-	sb.Grow(wd)
-	if len(styles) > 0 && styles[0] != nil {
-		sb.WriteString(styles[0].Render(left + lpad))
-	} else {
-		sb.WriteString(left)
-		sb.WriteString(lpad)
-	}
-	if len(styles) > 1 && styles[1] != nil {
-		sb.WriteString(styles[1].Render(mid))
-	} else {
-		sb.WriteString(mid)
-	}
-	if len(styles) > 2 && styles[2] != nil {
-		sb.WriteString(styles[2].Render(rpad + right))
-	} else {
-		sb.WriteString(rpad)
-		sb.WriteString(right)
-	}
-	return sb.String()
-}
-
-func padLines(lines int) string {
-	if lines > 0 {
-		return strings.Repeat("\n", lines)
-	}
-	return ""
-}
-
-func wrap(text string, maxWidth int) []string {
-	if len(text) <= maxWidth {
-		return []string{text}
-	}
-	wds := strings.Fields(text)
-	lines := make([]string, 0, len(wds)/2)
-	var current string
-	for _, w := range wds {
-		if current == "" {
-			current = w
-			continue
-		}
-		if len(current)+1+len(w) <= maxWidth {
-			current += " " + w
-		} else {
-			lines = append(lines, current)
-			current = w
-		}
-	}
-	if current != "" {
-		lines = append(lines, current)
-	}
-	return lines
 }
 
 func commas(n int) string {

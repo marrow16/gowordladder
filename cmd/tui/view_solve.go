@@ -2,12 +2,13 @@ package main
 
 import (
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"fmt"
+	"github.com/marrow16/gowordladder/cmd/tui/layout"
 	"github.com/marrow16/gowordladder/generator"
 	"github.com/marrow16/gowordladder/solving"
 	"github.com/marrow16/gowordladder/words"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -52,104 +53,109 @@ func (v *viewSolve) currentWord() string {
 	return ""
 }
 
-func (v *viewSolve) content(m *model) (string, *tea.Cursor) {
+func (v *viewSolve) render(sf layout.Surface, m *model) *tea.Cursor {
 	const (
-		promptStartWord = "            Start word: "
-		promptEndWord   = "              End word: "
-		promptMaxLadder = " Maximum ladder length: "
+		promptStartWord = "Start word:"
+		promptEndWord   = "End word:"
+		promptMaxLadder = "Maximum ladder length:"
 		promptLen       = len(promptMaxLadder)
-		footerLines     = 3
 	)
 	v.wordsDisplayed = make(wordPoints)
-	var sb strings.Builder
-	sb.Grow(m.height * m.width)
-	sb.WriteString("\n")
-	lines := 1
-	cpx := -1
-	var s string
+	var csr *tea.Cursor
 	switch v.step {
 	case solveStartWord:
-		sb.WriteString(promptStartWord)
+		sf.TextRight(1, 1, promptLen, promptStartWord)
 		if v.currentInput == nil {
 			v.currentInput = &wordInput{maxLength: 15}
 		}
-		s, cpx = v.currentInput.render()
-		sb.WriteString(s)
+		sf.TextFixed(1, promptLen+2, 15, v.currentInput.value(), inputStyle)
+		csr = tea.NewCursor(promptLen+v.currentInput.cursorPos()+2, 2)
 		if v.currentError != "" {
-			sb.WriteString(errorStyle.Render("  " + v.currentError))
+			sf.Text(1, promptLen+15+4, v.currentError, errorStyle)
 		}
-		lines++
 	case solveEndWord:
-		sb.WriteString(promptStartWord)
-		sb.WriteString(inputStyle.Width(15).Render(v.startWord.String()))
-		v.wordsDisplayed.addWord(v.startWord.String(), 2, promptLen)
-		sb.WriteString("\n" + promptEndWord)
+		wl := len(v.startWord.String())
+		sf.TextRight(1, 1, promptLen, promptStartWord)
+		sf.TextFixed(1, promptLen+2, len(v.startWord.String()), v.startWord.String(), inputStyle)
+		v.wordsDisplayed.addWord(v.startWord.String(), 2, promptLen+2)
+		sf.TextRight(2, 1, promptLen, promptEndWord)
 		if v.currentInput == nil {
-			v.currentInput = &wordInput{maxLength: 15}
+			v.currentInput = &wordInput{maxLength: wl}
 		}
-		s, cpx = v.currentInput.render()
-		sb.WriteString(s)
+		sf.TextFixed(2, promptLen+2, wl, v.currentInput.value(), inputStyle)
+		csr = tea.NewCursor(promptLen+v.currentInput.cursorPos()+2, 3)
 		if v.currentError != "" {
-			sb.WriteString(errorStyle.Render("  " + v.currentError))
+			sf.Text(2, promptLen+2+wl+2, v.currentError, errorStyle)
 		} else {
-			sb.WriteString(helpStyle.Render("  (blank or '?' for random)"))
+			sf.Text(2, promptLen+2+wl+2, "(blank or '?' for random)", helpStyle)
 		}
-		lines += 2
 	case solveMaxLadder:
-		sb.WriteString(promptStartWord)
-		sb.WriteString(inputStyle.Width(15).Render(v.startWord.String()))
-		v.wordsDisplayed.addWord(v.startWord.String(), 2, promptLen)
-		sb.WriteString("\n" + promptEndWord)
-		sb.WriteString(inputStyle.Width(15).Render(v.endWord.String()))
-		v.wordsDisplayed.addWord(v.endWord.String(), 3, promptLen)
-		sb.WriteString("\n" + promptMaxLadder)
+		wl := len(v.startWord.String())
+		sf.TextRight(1, 1, promptLen, promptStartWord)
+		sf.TextFixed(1, promptLen+2, wl, v.startWord.String(), inputStyle)
+		v.wordsDisplayed.addWord(v.startWord.String(), 2, promptLen+2)
+		sf.TextRight(2, 1, promptLen, promptEndWord)
+		sf.TextFixed(2, promptLen+2, wl, v.endWord.String(), inputStyle)
+		v.wordsDisplayed.addWord(v.endWord.String(), 3, promptLen+2)
+		sf.TextRight(3, 1, promptLen, promptMaxLadder)
 		if v.currentInput == nil {
 			v.currentInput = &numberInput{maxLength: 2}
 		}
-		s, cpx = v.currentInput.render()
-		sb.WriteString(s)
+		csr = tea.NewCursor(promptLen+v.currentInput.cursorPos()+2, 4)
+		sf.TextFixed(3, promptLen+2, 2, v.currentInput.value(), inputStyle)
 		if v.currentError != "" {
-			sb.WriteString(errorStyle.Render("  " + v.currentError))
+			sf.Text(3, promptLen+6, v.currentError, errorStyle)
 		} else {
-			sb.WriteString(helpStyle.Render("  (optional - blank for auto min)"))
+			sf.Text(3, promptLen+6, "(optional - blank for auto min)", helpStyle)
 		}
-		lines += 3
 	case solveSolved:
-		sb.WriteString(promptStartWord)
-		sb.WriteString(inputStyle.Width(15).Render(v.startWord.String()))
-		v.wordsDisplayed.addWord(v.startWord.String(), 2, promptLen)
-		sb.WriteString("\n" + promptEndWord)
-		sb.WriteString(inputStyle.Width(15).Render(v.endWord.String()))
-		v.wordsDisplayed.addWord(v.endWord.String(), 3, promptLen)
-		sb.WriteString("\n" + promptMaxLadder)
+		wl := len(v.startWord.String())
+		sf.TextRight(1, 1, promptLen, promptStartWord)
+		sf.TextFixed(1, promptLen+2, wl, v.startWord.String(), inputStyle)
+		v.wordsDisplayed.addWord(v.startWord.String(), 2, promptLen+2)
+		sf.TextRight(2, 1, promptLen, promptEndWord)
+		sf.TextFixed(2, promptLen+2, wl, v.endWord.String(), inputStyle)
+		v.wordsDisplayed.addWord(v.endWord.String(), 3, promptLen+2)
+		sf.TextRight(3, 1, promptLen, promptMaxLadder)
 		if v.ladderLength == -1 {
-			sb.WriteString(inputStyle.Width(2).Render("??"))
+			sf.TextFixed(3, promptLen+2, 2, "??", inputStyle)
 		} else {
-			sb.WriteString(inputStyle.Width(2).Render(fmt.Sprintf("%2d", v.ladderLength)))
+			sf.TextFixed(3, promptLen+2, 2, strconv.Itoa(v.ladderLength), inputStyle)
 		}
-		sb.WriteString("\n\n Took " + highlightStyle.Render(truncateDuration(v.dictionaryLoadTime)) + " to load dictionary")
-		lines += 5
+		sf.TextRun(5, 1, layout.NewRuns("Took ").Add(truncateDuration(v.dictionaryLoadTime), highlightStyle).Add(" to load dictionary"))
+		row := 6
 		if v.ladderLength == -1 {
-			sb.WriteString("\n Took " + highlightStyle.Render(truncateDuration(v.minLengthCalcTime)) + " to determine minimum ladder length " + highlightStyle.Render(strconv.Itoa(v.minLadderLength)))
-			lines++
+			sf.TextRun(row, 1, layout.NewRuns("Took ").Add(truncateDuration(v.minLengthCalcTime), highlightStyle).Add(" to determine minimum ladder length ").Add(strconv.Itoa(v.minLadderLength), highlightStyle))
+			row++
 		}
-		sb.WriteString("\n Took " + highlightStyle.Render(truncateDuration(v.solveTime)) + " to find " + highlightStyle.Render(commas(len(v.solutions))) + " solutions (explored " + highlightStyle.Render(commas(v.explored)) + ")")
-		lines++
+		sf.TextRun(row, 1, layout.NewRuns("Took ").
+			Add(truncateDuration(v.solveTime), highlightStyle).
+			Add(" to find ").
+			Add(commas(len(v.solutions)), highlightStyle).Add(" solutions"))
 	}
-
-	sb.WriteString(padLines(m.height - lines - footerLines))
-	var csr *tea.Cursor
-	if cpx > -1 {
-		csr = tea.NewCursor(promptLen+cpx, lines)
-	}
-	return sb.String(), csr
+	return csr
 }
 
-func (v *viewSolve) help() string {
+func (v *viewSolve) helpLines() ([]string, *lipgloss.Style) {
 	if v.step == solveSolved && len(v.solutions) > 0 {
-		return ctrlPlay + ": Play  •  enter: Solutions\n" + ctrlNew + ": New  •  " + ctrlGenerate + ": Generate"
+		return []string{
+			ctrlPlay + ": Play  •  enter: Solutions",
+			ctrlNew + ": New  •  " + ctrlGenerate + ": Generate"}, nil
 	} else {
-		return "\n" + ctrlNew + ": New  •  " + ctrlGenerate + ": Generate"
+		return []string{ctrlNew + ": New  •  " + ctrlGenerate + ": Generate"}, nil
+	}
+}
+
+func (v *viewSolve) menu() []menuItem {
+	if v.step == solveSolved {
+		return []menuItem{
+			{text: "Play", key: ctrlPlay},
+			{text: "Solutions", key: enter},
+			{text: "New", key: ctrlNew},
+		}
+	}
+	return []menuItem{
+		{text: "New", key: ctrlNew},
 	}
 }
 
@@ -199,7 +205,12 @@ func (v *viewSolve) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 
 func (v *viewSolve) click(m *model, msg tea.Mouse) tea.Cmd {
 	if wd, ok := v.wordsDisplayed[pt{msg.Y, msg.X}]; ok {
-		return m.lookupWord(wd)
+		switch msg.Button {
+		case tea.MouseLeft:
+			return m.lookupWord(wd)
+		case tea.MouseRight:
+			return m.lookupDistance(wd)
+		}
 	}
 	return nil
 }
