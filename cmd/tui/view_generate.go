@@ -176,10 +176,10 @@ func (v *viewGenerate) helpLines() ([]string, *lipgloss.Style) {
 	if v.step == generateGenerated {
 		return []string{
 			ctrlPlay + ": Play  •  " + enter + ": Solutions",
-			ctrlNew + ": New  •  " + ctrlSolver + ": Solver",
+			ctrlNew + ": New",
 		}, nil
 	} else {
-		return []string{ctrlNew + ": New  •  " + ctrlSolver + ": Solver"}, nil
+		return []string{ctrlNew + ": New"}, nil
 	}
 }
 

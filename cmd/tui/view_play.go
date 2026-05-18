@@ -114,8 +114,7 @@ func (v *viewPlay) render(sf layout.Surface, m *model) *tea.Cursor {
 func (v *viewPlay) helpLines() ([]string, *lipgloss.Style) {
 	const (
 		firstHelp  = "space: Clear  •  ?: Hint  •  " + ctrlFill + ": Fill  •  " + ctrlHelp + ": Solutions"
-		secondHelp = ctrlNew + ": New  •  " + ctrlGenerate + ": Generate  •  " + ctrlSolver + ": Solver"
-		solvedHelp = ctrlNew + ": New  •  " + ctrlHelp + ": Solutions  •  " + ctrlGenerate + ": Generate"
+		solvedHelp = ctrlNew + ": New  •  " + ctrlHelp + ": Solutions"
 	)
 	switch {
 	case v.solved:
@@ -124,13 +123,13 @@ func (v *viewPlay) helpLines() ([]string, *lipgloss.Style) {
 			solvedHelp,
 		}, &hintStyle
 	case v.hint != "":
-		return []string{v.hint, secondHelp}, &hintStyle
+		return []string{v.hint, solvedHelp}, &hintStyle
 	case v.warning != "":
-		return []string{v.warning, secondHelp}, &warningStyle
+		return []string{v.warning, solvedHelp}, &warningStyle
 	case v.wrong != "":
-		return []string{v.wrong, secondHelp}, &wrongStyle
+		return []string{v.wrong, solvedHelp}, &wrongStyle
 	default:
-		return []string{firstHelp, secondHelp}, nil
+		return []string{firstHelp, solvedHelp}, nil
 	}
 }
 

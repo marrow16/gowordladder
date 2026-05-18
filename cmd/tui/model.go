@@ -289,7 +289,6 @@ func (m *model) View() tea.View {
 	sf := layout.NewSurface(m.height, m.width)
 	sf.LineColumns(0, 0, m.width, m.headerLine(), headerStyle)
 	footerLines, firstStyle := m.currentView.helpLines()
-	footerLines[len(footerLines)-1] = footerLines[len(footerLines)-1] + "  •  " + exit + ": Exit"
 	fh := len(footerLines)
 	for i, fl := range footerLines {
 		if i == 0 && firstStyle != nil {

@@ -159,6 +159,7 @@ func (v *viewDistances) menu() []menuItem {
 		}
 	}
 	return []menuItem{
+		{text: "Distances", key: enter},
 		{text: "Islands", key: "1"},
 		{text: "Doublets", key: "2"},
 		{text: "Longest ladders", key: "0"},

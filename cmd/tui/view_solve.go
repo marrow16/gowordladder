@@ -139,10 +139,10 @@ func (v *viewSolve) render(sf layout.Surface, m *model) *tea.Cursor {
 func (v *viewSolve) helpLines() ([]string, *lipgloss.Style) {
 	if v.step == solveSolved && len(v.solutions) > 0 {
 		return []string{
-			ctrlPlay + ": Play  •  enter: Solutions",
-			ctrlNew + ": New  •  " + ctrlGenerate + ": Generate"}, nil
+			ctrlPlay + ": Play  •  " + enter + ": Solutions",
+			ctrlNew + ": New"}, nil
 	} else {
-		return []string{ctrlNew + ": New  •  " + ctrlGenerate + ": Generate"}, nil
+		return []string{ctrlNew + ": New"}, nil
 	}
 }
 

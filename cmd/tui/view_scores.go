@@ -17,6 +17,7 @@ type viewScores struct {
 	backMode       mode
 	backView       view
 	offsetY        int
+	error          string
 	wordsDisplayed wordPoints
 }
 
@@ -35,7 +36,7 @@ func (v *viewScores) render(sf layout.Surface, m *model) *tea.Cursor {
 		rgn.Text(row, 4, strconv.FormatFloat(s.Score, 'f', 0, 64)+" ("+strconv.FormatFloat((s.Score/s.MaxScore)*100, 'f', 0, 64)+"%)", boldStyle)
 		rgn.TextRun(row+1, 4, layout.NewRuns(s.Date+"  ", scoreDetailStyle).
 			Add(s.StartWord, highlightStyle).Add(" to ").Add(s.EndWord, highlightStyle).
-			Add("("+strconv.Itoa(s.LadderLength)+" rungs)", scoreDetailStyle))
+			Add(" ("+strconv.Itoa(s.LadderLength)+" rungs)", scoreDetailStyle))
 		dtWidth := len(s.Date)
 		v.wordsDisplayed.addWord(s.StartWord, row+3, dtWidth+7)
 		v.wordsDisplayed.addWord(s.EndWord, row+3, dtWidth+11+len(s.StartWord))
@@ -48,14 +49,24 @@ var (
 )
 
 func (v *viewScores) helpLines() ([]string, *lipgloss.Style) {
-	return []string{ctrlNew + ": Clear  •  " + ctrlPlay + ": Play again  •  " + back + ": Back"}, nil
+	if v.error != "" {
+		return []string{
+			v.error,
+			ctrlPlay + ": Play again  •  " + ctrlNew + ": Clear  •  " + back + ": Back",
+		}, &errorStyle
+	}
+	return []string{ctrlPlay + ": Play again  •  " + ctrlNew + ": Clear  •  " + back + ": Back"}, nil
 }
 
 func (v *viewScores) menu() []menuItem {
-	return nil
+	return []menuItem{
+		{text: "Play again", key: ctrlPlay},
+		{text: "Clear", key: ctrlNew},
+	}
 }
 
 func (v *viewScores) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
+	v.error = ""
 	switch msg.String() {
 	case back, backspace:
 		m.restoreView(highs, v.backMode, v.backView)
@@ -63,10 +74,12 @@ func (v *viewScores) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 		v.offsetY = 0
 		m.clearScores()
 	case ctrlPlay:
-		if h := v.offsetY / 2; h < len(m.prefs.HighScores) {
+		if h := v.offsetY; h >= 0 && h < len(m.prefs.HighScores) {
 			hs := m.prefs.HighScores[h]
 			if puzzle, err := generator.GeneratePuzzle(hs.WordLength, hs.LadderLength, &hs.StartWord, &hs.EndWord); err == nil {
 				m.play(*puzzle)
+			} else {
+				v.error = err.Error()
 			}
 		}
 	case up:
