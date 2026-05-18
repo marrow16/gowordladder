@@ -4,12 +4,12 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"fmt"
+	"github.com/marrow16/gowordladder/cmd/tui/layout"
 	"github.com/marrow16/gowordladder/solving"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 )
 
 type solutionsView interface {
@@ -30,80 +30,67 @@ type viewSolutions struct {
 	wordsDisplayed   wordPoints
 }
 
-func (v *viewSolutions) content(m *model) (string, *tea.Cursor) {
-	const (
-		footerLines = 2
-	)
+const wordNumWidth = 3
+
+func (v *viewSolutions) render(sf layout.Surface, m *model) *tea.Cursor {
 	v.wordsDisplayed = make(wordPoints)
-	var sb strings.Builder
-	sb.Grow(m.height * m.width)
-	lines := 1
 	if !v.showingAnalysis {
 		v.solutionWidth = v.calculateSolutionWidth()
-		numSolutions := m.width / v.solutionWidth
-		lines++
-		sb.WriteString(" ")
-		for s := 0; s < numSolutions && (s+v.offsetX) < len(v.solutions); s++ {
-			hdr := fmt.Sprintf("  %d/%d", s+v.offsetX+1, len(v.solutions))
-			sb.WriteString(helpStyle.Render(hdr))
-			sb.WriteString(strings.Repeat(" ", v.solutionWidth-len(hdr)))
+		across := (m.width - wordNumWidth) / v.solutionWidth
+		solTot := strconv.Itoa(len(v.solutions))
+		for s := 0; s < across && (s+v.offsetX) < len(v.solutions); s++ {
+			sf.Text(0, (s*v.solutionWidth)+wordNumWidth+1, strconv.Itoa(s+v.offsetX+1)+"/"+solTot, helpStyle)
 		}
+		row := 1
 		if v.offsetY == 0 {
-			sb.WriteString("\n ")
-			lines++
-			hdr := "  " + topLeft + strings.Repeat(horizontal, v.wordLen) + topRight
-			hdr += strings.Repeat(" ", v.solutionWidth-utf8.RuneCountInString(hdr))
-			for s := 0; s < numSolutions && (s+v.offsetX) < len(v.solutions); s++ {
-				sb.WriteString(helpStyle.Render(hdr))
+			boxTop := topLeft + strings.Repeat(horizontal, v.wordLen) + topRight
+			for s := 0; s < across && (s+v.offsetX) < len(v.solutions); s++ {
+				sf.Text(row, (s*v.solutionWidth)+wordNumWidth, boxTop, helpStyle)
 			}
+			row++
 		}
-		maxLines := m.height - lines - footerLines
+		maxLines := sf.Height() - row
+		boxBottom := bottomLeft + strings.Repeat(horizontal, v.wordLen) + bottomRight
 		for l := 0; l < maxLines && (l+v.offsetY) <= v.maxLadderLen; l++ {
-			sb.WriteString("\n")
-			row := l + v.offsetY
-			if row == v.maxLadderLen {
-				sb.WriteString("   ")
-			} else {
-				sb.WriteString(helpStyle.Render(fmt.Sprintf("%2d ", v.offsetY+l+1)))
+			actualRow := l + v.offsetY
+			if actualRow < v.maxLadderLen {
+				sf.TextRight(l+row, 0, wordNumWidth-1, strconv.Itoa(actualRow+1), helpStyle)
 			}
-			lines++
-			for s := 0; s < numSolutions && (s+v.offsetX) < len(v.solutions); s++ {
+			for s := 0; s < across && (s+v.offsetX) < len(v.solutions); s++ {
 				solution := v.solutions[s+v.offsetX]
 				ladder := solution.Ladder()
-				x := 4 + (s * v.solutionWidth)
-				if row == 0 {
-					sb.WriteString(helpStyle.Render(vertical))
-					sb.WriteString(ladder[row].String())
-					sb.WriteString(helpStyle.Render(vertical))
-					sb.WriteString(strings.Repeat(" ", v.solutionWidth-v.wordLen-2))
-					v.wordsDisplayed.addWord(ladder[row].String(), lines-1, x)
-				} else if row < len(ladder) {
-					sb.WriteString(helpStyle.Render(vertical))
-					prev := []rune(ladder[row-1].String())
-					word := []rune(ladder[row].String())
+				ladderLen := len(ladder)
+				col := (s * v.solutionWidth) + wordNumWidth
+				colWs := col + 1
+				colEnd := colWs + v.wordLen
+				switch {
+				case actualRow == ladderLen:
+					sf.Text(l+row, col, boxBottom, helpStyle)
+				case actualRow == 0:
+					sf.Text(l+row, col, vertical, helpStyle)
+					sf.Text(l+row, colWs, ladder[actualRow].String())
+					sf.Text(l+row, colEnd, vertical, helpStyle)
+					v.wordsDisplayed.addWord(ladder[actualRow].String(), l+3, colWs)
+				case actualRow < ladderLen:
+					sf.Text(l+row, col, vertical, helpStyle)
+					sf.Text(l+row, colWs, ladder[actualRow].String())
+					sf.Text(l+row, colEnd, vertical, helpStyle)
+					v.wordsDisplayed.addWord(ladder[actualRow].String(), l+3, colWs)
+					prev := []rune(ladder[actualRow-1].String())
+					word := []rune(ladder[actualRow].String())
+					diffPos := 0
 					for i, r := range word {
 						if r != prev[i] {
-							sb.WriteString(letterStyle.Render(string(r)))
-						} else {
-							sb.WriteRune(r)
+							diffPos = i
+							break
 						}
 					}
-					sb.WriteString(helpStyle.Render(vertical))
-					sb.WriteString(strings.Repeat(" ", v.solutionWidth-v.wordLen-2))
-					v.wordsDisplayed.addWord(ladder[row].String(), lines-1, x)
-				} else if row == len(ladder) {
-					sb.WriteString(helpStyle.Render(bottomLeft))
-					sb.WriteString(helpStyle.Render(strings.Repeat(horizontal, v.wordLen)))
-					sb.WriteString(helpStyle.Render(bottomRight))
-					sb.WriteString(strings.Repeat(" ", v.solutionWidth-v.wordLen-2))
-				} else {
-					sb.WriteString(strings.Repeat(" ", v.solutionWidth))
+					sf.Text(l+row, colWs+diffPos, string(word[diffPos]), letterStyle)
 				}
 			}
 		}
 	} else {
-		sb.WriteString(fmt.Sprintf(" Analysis of distinct words over %d solutions", len(v.solutions)))
-		lines++
+		sf.Text(0, 1, fmt.Sprintf("Analysis of distinct words over %d solutions", len(v.solutions)))
 		maxCount := 1
 		for _, a := range v.analysis {
 			if mx := len(a); mx > maxCount {
@@ -111,31 +98,36 @@ func (v *viewSolutions) content(m *model) (string, *tea.Cursor) {
 			}
 		}
 		maxDigits := len(strconv.Itoa(maxCount)) + 1
-		maxFmt := fmt.Sprintf("%%%dd ", maxDigits)
-		maxLines := m.height - lines - footerLines
+		maxLines := sf.Height() - 1
+		barWidth := m.width / 2
 		for l := 0; l < maxLines && (l+v.offsetY) < v.maxLadderLen; l++ {
 			row := l + v.offsetY
-			sb.WriteString("\n")
-			lines++
-			sb.WriteString(helpStyle.Render(fmt.Sprintf("%2d: ", row+1)))
+			sf.TextRight(l+1, 1, 3, strconv.Itoa(row+1)+":", helpStyle)
 			count := len(v.analysis[row])
-			sb.WriteString(fmt.Sprintf(maxFmt, count))
-			const barWidth = 20
-			sb.WriteString(helpStyle.Render(strings.Repeat("█", (count*barWidth)/maxCount)))
+			sf.TextRight(l+1, 4, maxDigits, strconv.Itoa(count))
+			sf.Block(l+1, maxDigits+5, (count*barWidth)/maxCount, '█', helpStyle)
 		}
 	}
-	sb.WriteString(padLines(m.height - lines - 1))
-	return sb.String(), nil
+	return nil
 }
 
-func (v *viewSolutions) help() string {
+func (v *viewSolutions) helpLines() ([]string, *lipgloss.Style) {
 	if v.showingAnalysis {
-		return "↑/↓: Scroll  •  " + back + ": Back"
+		return []string{"↑/↓: Scroll  •  " + back + ": Back"}, nil
 	} else if len(v.solutions) > 1 {
-		return "←/→: Solutions  •  ↑/↓: Scroll  •  " + back + ": Back  •  " + ctrlAnalyse + ": Analyse"
+		return []string{"←/→: Solutions  •  ↑/↓: Scroll  •  " + back + ": Back  •  " + ctrlAnalyse + ": Analyse"}, nil
 	} else {
-		return "←/→: Solutions  •  ↑/↓: Scroll  •  " + back + ": Back"
+		return []string{"←/→: Solutions  •  ↑/↓: Scroll  •  " + back + ": Back"}, nil
 	}
+}
+
+func (v *viewSolutions) menu() []menuItem {
+	if !v.showingAnalysis {
+		return []menuItem{
+			{text: "Analyse", key: ctrlAnalyse},
+		}
+	}
+	return nil
 }
 
 func (v *viewSolutions) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
@@ -199,7 +191,7 @@ func (v *viewSolutions) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	case pageLeft:
 		if !v.showingAnalysis {
 			if v.offsetX > 0 && v.solutionWidth > 0 {
-				pgWd := (m.width / v.solutionWidth) - 1
+				pgWd := ((m.width - wordNumWidth) / v.solutionWidth) - 1
 				if l := v.offsetX - pgWd; l >= 0 {
 					v.offsetX = l
 				} else {
@@ -216,7 +208,7 @@ func (v *viewSolutions) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	case pageRight:
 		if !v.showingAnalysis {
 			if v.solutionWidth > 0 {
-				pgWd := (m.width / v.solutionWidth) - 1
+				pgWd := ((m.width - wordNumWidth) / v.solutionWidth) - 1
 				if l := v.offsetX + pgWd; l < len(v.solutions) {
 					v.offsetX = l
 				} else {
@@ -230,7 +222,12 @@ func (v *viewSolutions) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 
 func (v *viewSolutions) click(m *model, msg tea.Mouse) tea.Cmd {
 	if wd, ok := v.wordsDisplayed[pt{msg.Y, msg.X}]; ok {
-		return m.lookupWord(wd)
+		switch msg.Button {
+		case tea.MouseLeft:
+			return m.lookupWord(wd)
+		case tea.MouseRight:
+			return m.lookupDistance(wd)
+		}
 	}
 	return nil
 }
@@ -292,13 +289,13 @@ func (v *viewSolutions) currentWord() string {
 }
 
 func (v *viewSolutions) calculateSolutionWidth() int {
-	width := v.wordLen + 6
-	l := len(v.solutions)
-	maxHdr := fmt.Sprintf("  %d/%d  ", l, l)
-	if len(maxHdr) > width {
-		width = len(maxHdr)
+	width := v.wordLen + 2
+	l := len(strconv.Itoa(len(v.solutions)))
+	// check that "n/n" isn't bigger than the word length...
+	if maxHdr := (l * 2) + 1; maxHdr > width {
+		width = maxHdr
 	}
-	return width
+	return width + 2
 }
 
 func (v *viewSolutions) setSolutions(solutions []*solving.Solution, backMode mode, backView view) {

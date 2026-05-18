@@ -4,6 +4,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"fmt"
+	"github.com/marrow16/gowordladder/cmd/tui/layout"
 	"github.com/marrow16/gowordladder/generator"
 	"github.com/marrow16/gowordladder/words"
 	"math"
@@ -42,106 +43,110 @@ const (
 
 var deductedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF8000"))
 
-func (v *viewPlay) content(m *model) (string, *tea.Cursor) {
+func (v *viewPlay) render(sf layout.Surface, m *model) *tea.Cursor {
 	v.wordsDisplayed = make(wordPoints)
 	v.mousePositions = make(map[int][2]int)
-	var sb strings.Builder
-	sb.Grow(m.height * m.width)
-	if v.deducted {
-		sb.WriteString(headerStyle.Width(m.width).Render(center3(
-			m.width,
-			fmt.Sprintf(" Solutions: %d ", len(v.puzzle.Solutions)),
-			fmt.Sprintf("Current score: %.0f", v.currentScore),
-			fmt.Sprintf(" Max score: %.0f ", v.puzzle.MaxScore),
-			nil, &deductedStyle, &headerStyle)))
-	} else {
-		sb.WriteString(headerStyle.Width(m.width).Render(center3(
-			m.width,
-			fmt.Sprintf(" Solutions: %d ", len(v.puzzle.Solutions)),
-			fmt.Sprintf("Current score: %.0f", v.currentScore),
-			fmt.Sprintf(" Max score: %.0f ", v.puzzle.MaxScore))))
+	hdr := layout.Runs{
+		{Text: " Solutions: " + strconv.Itoa(len(v.puzzle.Solutions))},
+		{Text: " Current score: " + strconv.FormatFloat(v.currentScore, 'f', 0, 64) + " "},
+		{Text: "Max score: " + strconv.FormatFloat(v.puzzle.MaxScore, 'f', 0, 64) + " "},
 	}
-	lines := playHeaderLines
-
+	if v.deducted {
+		hdr[1].Styles = []lipgloss.Style{deductedStyle}
+	}
+	sf.LineColumns(0, 0, m.width, hdr, headerStyle)
 	var csr *tea.Cursor
-	maxLines := m.height - lines - playFooterLines
-	padL := strings.Repeat(" ", ((m.width-v.puzzle.WordLength+2)/2)-3)
-	x := len(padL) + 4
-	stop := false
-	for l := 0; !stop && l < maxLines; l++ {
-		sb.WriteString("\n")
-		lines++
+	maxLines := sf.Height()
+	col := (m.width / 2) - ((v.puzzle.WordLength + 2) / 2)
+	colWd := col + 1
+	colEnd := colWd + v.puzzle.WordLength
+	solvedStyle := make([]lipgloss.Style, 0)
+	if v.solved {
+		solvedStyle = []lipgloss.Style{highlightStyle}
+	}
+	for l := 0; l < maxLines; l++ {
 		rung := l + v.offsetY - 2
-		sb.WriteString(padL)
+		row := l + 1
 		switch {
 		case rung == -2:
-			sb.WriteString(helpStyle.Render("   " + topLeft + strings.Repeat(horizontal, v.puzzle.WordLength) + topRight))
-		case rung == -1:
-			sb.WriteString(helpStyle.Render(" 1 " + vertical))
-			if v.solved {
-				sb.WriteString(highlightStyle.Render(v.puzzle.StartWord.String()))
-			} else {
-				sb.WriteString(v.puzzle.StartWord.String())
-			}
-			sb.WriteString(helpStyle.Render(vertical))
-			v.wordsDisplayed.addWord(v.puzzle.StartWord.String(), lines-1, x)
-		case rung == v.puzzle.LadderLength-2:
-			sb.WriteString(helpStyle.Render(fmt.Sprintf("%2d ", v.puzzle.LadderLength)))
-			sb.WriteString(helpStyle.Render(vertical))
-			if v.solved {
-				sb.WriteString(highlightStyle.Render(v.puzzle.EndWord.String()))
-			} else {
-				sb.WriteString(v.puzzle.EndWord.String())
-			}
-			sb.WriteString(helpStyle.Render(vertical))
-			v.wordsDisplayed.addWord(v.puzzle.EndWord.String(), lines-1, x)
+			sf.Text(row, col, topLeft+strings.Repeat(horizontal, v.puzzle.WordLength)+topRight, helpStyle)
 		case rung == v.puzzle.LadderLength-1:
-			sb.WriteString(helpStyle.Render("   " + bottomLeft + strings.Repeat(horizontal, v.puzzle.WordLength) + bottomRight))
+			sf.Text(row, col, bottomLeft+strings.Repeat(horizontal, v.puzzle.WordLength)+bottomRight, helpStyle)
+		case rung == -1:
+			sf.TextRight(row, 0, col-1, "1", helpStyle)
+			sf.Text(row, col, vertical, helpStyle)
+			sf.Text(row, colWd, v.puzzle.StartWord.String(), solvedStyle...)
+			sf.Text(row, colEnd, vertical, helpStyle)
+			v.wordsDisplayed.addWord(v.puzzle.StartWord.String(), l+2, colWd)
+		case rung == v.puzzle.LadderLength-2:
+			sf.TextRight(row, 0, col-1, strconv.Itoa(v.puzzle.LadderLength), helpStyle)
+			sf.Text(row, col, vertical, helpStyle)
+			sf.Text(row, colWd, v.puzzle.EndWord.String(), solvedStyle...)
+			sf.Text(row, colEnd, vertical, helpStyle)
+			v.wordsDisplayed.addWord(v.puzzle.EndWord.String(), l+2, colWd)
 		case rung < v.puzzle.LadderLength:
 			if rung == v.onStep {
-				csr = tea.NewCursor(len(padL)+4+v.onChar, lines-1)
+				csr = tea.NewCursor(colWd+v.onChar, l+2)
 				csr.Color = playCursorColor
 			}
-			sb.WriteString(helpStyle.Render(fmt.Sprintf("%2d ", rung+2)))
-			sb.WriteString(helpStyle.Render(vertical))
-			if v.solved {
-				sb.WriteString(highlightStyle.Render(v.entries[rung]))
-				v.wordsDisplayed.addWord(v.entries[rung], lines-1, x)
-			} else if v.okWords[rung] {
-				sb.WriteString(highlightStyle.Render(v.entries[rung]))
-				v.mousePositions[lines-1] = [2]int{rung, x}
-			} else {
-				sb.WriteString(v.entries[rung])
-				v.mousePositions[lines-1] = [2]int{rung, x}
+			sf.TextRight(row, 0, col-1, strconv.Itoa(rung+2), helpStyle)
+			sf.Text(row, col, vertical, helpStyle)
+			switch {
+			case v.solved:
+				sf.Text(row, colWd, v.entries[rung], highlightStyle)
+				v.wordsDisplayed.addWord(v.entries[rung], l+2, colWd)
+			case v.okWords[rung]:
+				sf.Text(row, colWd, v.entries[rung], highlightStyle)
+				v.mousePositions[l+2] = [2]int{rung, colWd}
+			default:
+				sf.Text(row, colWd, v.entries[rung])
+				v.mousePositions[l+2] = [2]int{rung, colWd}
 			}
-			sb.WriteString(helpStyle.Render(vertical))
-		default:
-			stop = true
+			if v.solved {
+				sf.Text(row, colWd, v.entries[rung], highlightStyle)
+			}
+			sf.Text(row, colEnd, vertical, helpStyle)
 		}
 	}
-
-	sb.WriteString(padLines(m.height - lines - playHeaderLines))
-	return sb.String(), csr
+	return csr
 }
 
-func (v *viewPlay) help() string {
+func (v *viewPlay) helpLines() ([]string, *lipgloss.Style) {
 	const (
-		firstHelp   = "space: Clear  •  ?: Hint  •  " + ctrlFill + ": Fill  •  " + ctrlHelp + ": Solutions"
-		secondHelp  = "\n" + ctrlNew + ": New  •  " + ctrlGenerate + ": Generate  •  " + ctrlSolver + ": Solver"
-		solvedHelp  = "\n" + ctrlNew + ": New  •  " + ctrlHelp + ": Solutions  •  " + ctrlGenerate + ": Generate"
-		defaultHelp = firstHelp + secondHelp
+		firstHelp  = "space: Clear  •  ?: Hint  •  " + ctrlFill + ": Fill  •  " + ctrlHelp + ": Solutions"
+		secondHelp = ctrlNew + ": New  •  " + ctrlGenerate + ": Generate  •  " + ctrlSolver + ": Solver"
+		solvedHelp = ctrlNew + ": New  •  " + ctrlHelp + ": Solutions  •  " + ctrlGenerate + ": Generate"
 	)
 	switch {
 	case v.solved:
-		return hintStyle.Render(fmt.Sprintf("You solved it!  Score: %.0f (%0.f%%)", v.currentScore, (v.currentScore/v.puzzle.MaxScore)*100)) + solvedHelp
+		return []string{
+			fmt.Sprintf("You solved it!  Score: %.0f (%0.f%%)", v.currentScore, (v.currentScore/v.puzzle.MaxScore)*100),
+			solvedHelp,
+		}, &hintStyle
 	case v.hint != "":
-		return hintStyle.Render(v.hint) + secondHelp
+		return []string{v.hint, secondHelp}, &hintStyle
 	case v.warning != "":
-		return warningStyle.Render(v.warning) + secondHelp
+		return []string{v.warning, secondHelp}, &warningStyle
 	case v.wrong != "":
-		return wrongStyle.Render(v.wrong) + secondHelp
+		return []string{v.wrong, secondHelp}, &wrongStyle
 	default:
-		return defaultHelp
+		return []string{firstHelp, secondHelp}, nil
+	}
+}
+
+func (v *viewPlay) menu() []menuItem {
+	if v.solved {
+		return []menuItem{
+			{text: "Solutions", key: ctrlHelp},
+			{text: "New", key: ctrlNew},
+		}
+	}
+	return []menuItem{
+		{text: "Hint", key: "?"},
+		{text: "Fill word", key: ctrlFill},
+		{text: "Clear word", key: space},
+		{text: "Solutions", key: ctrlHelp},
+		{text: "New", key: ctrlNew},
 	}
 }
 
@@ -176,6 +181,18 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 			v.onStep++
 			v.ensureCursorVisible(m)
 		}
+	case pageUp:
+		v.onStep -= m.height - playHeaderLines - playFooterLines - 3
+		if v.onStep < 0 {
+			v.onStep = 0
+		}
+		v.ensureCursorVisible(m)
+	case pageDown:
+		v.onStep += m.height - playHeaderLines - playFooterLines - 3
+		if v.onStep >= len(v.entries) {
+			v.onStep = len(v.entries) - 1
+		}
+		v.ensureCursorVisible(m)
 	case enter, tab:
 		if !v.solved {
 			v.checkWord(m)
@@ -228,7 +245,7 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 				v.onChar--
 			}
 		}
-	case "space":
+	case space:
 		if !v.solved {
 			delete(v.okWords, v.onStep)
 			v.entries[v.onStep] = strings.Repeat("_", v.puzzle.WordLength)
@@ -245,8 +262,8 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 		}
 	default:
 		if !v.solved {
-			delete(v.okWords, v.onStep)
 			if k := strings.ToUpper(msg.String()); len(k) == 1 && (k == "." || k == "_" || k == "-" || (k >= "A" && k <= "Z")) {
+				delete(v.okWords, v.onStep)
 				s := v.entries[v.onStep]
 				s = s[:v.onChar] + k + s[v.onChar+1:]
 				v.entries[v.onStep] = s
@@ -262,7 +279,12 @@ func (v *viewPlay) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 
 func (v *viewPlay) click(m *model, msg tea.Mouse) tea.Cmd {
 	if wd, ok := v.wordsDisplayed[pt{msg.Y, msg.X}]; ok {
-		return m.lookupWord(wd)
+		switch msg.Button {
+		case tea.MouseLeft:
+			return m.lookupWord(wd)
+		case tea.MouseRight:
+			return m.lookupDistance(wd)
+		}
 	}
 	if mp, ok := v.mousePositions[msg.Y]; ok {
 		return func() tea.Msg {

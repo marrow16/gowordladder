@@ -2,8 +2,10 @@ package main
 
 import (
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"encoding/json"
 	"fmt"
+	"github.com/marrow16/gowordladder/cmd/tui/layout"
 	"github.com/marrow16/gowordladder/words"
 	"net/http"
 	"strconv"
@@ -19,78 +21,74 @@ type viewLookup struct {
 	backMode         mode
 	backView         view
 	offsetY          int
+	totalRows        int
 	input            input
 	lookupResult     *lookupResult
 	variationsResult *variationsResult
 }
 
-func (v *viewLookup) content(m *model) (string, *tea.Cursor) {
+func (v *viewLookup) render(sf layout.Surface, m *model) *tea.Cursor {
 	const (
-		prompt      = " Word: "
-		footerLines = 2
+		prompt    = "Word:"
+		promptLen = len(prompt)
+		inputLen  = 15
 	)
-	var sb strings.Builder
-	sb.Grow(m.height * m.width)
-	sb.WriteString("\n" + prompt)
-	s, cxp := v.input.render()
-	sb.WriteString(s)
-	csr := tea.NewCursor(cxp+len(prompt), 2)
-	sb.WriteString("\n" + helpStyle.Render(strings.Repeat(horizontal, m.width)) + "\n")
-	lines := 4
-	if v.variationsResult != nil {
-		if len(v.variationsResult.variations) == 0 {
-			sb.WriteString(" " + errorStyle.Render("No variations found") + "\n")
-			lines++
-		} else {
-			vs := make([]string, len(v.variationsResult.variations))
-			for i, vwd := range v.variationsResult.variations {
-				vs[i] = vwd.String()
-			}
-			const title = " Variations: "
-			vlns := wrap(strings.Join(vs, ", "), m.width-len(title))
-			maxLines := m.height - lines - footerLines
-			for l := 0; l < maxLines && (l+v.offsetY) < len(vlns); l++ {
-				sb.WriteString("\n")
-				if l == 0 {
-					sb.WriteString(title)
-				} else {
-					sb.WriteString(strings.Repeat(" ", len(title)))
-				}
-				sb.WriteString(vlns[l+v.offsetY])
-				lines++
-			}
+	sf.TextRight(1, 0, promptLen+1, prompt)
+	sf.TextFixed(1, promptLen+2, inputLen, v.input.value(), inputStyle)
+	cp := v.input.cursorPos()
+	sf.Block(2, 0, m.width, '─', helpStyle)
+	switch {
+	case v.variationsResult != nil && len(v.variationsResult.variations) == 0:
+		sf.Text(4, 1, "No variations found", errorStyle)
+	case v.variationsResult != nil:
+		const (
+			title    = "Variations:"
+			titleLen = len(title) + 2
+		)
+		sf.Text(4, 1, title)
+		vs := make([]string, len(v.variationsResult.variations))
+		for i, vwd := range v.variationsResult.variations {
+			vs[i] = vwd.String()
 		}
-	} else if v.lookupResult != nil {
+		sf.TextWrapped(4, titleLen, m.width-titleLen, strings.Join(vs, ", "))
+	case v.lookupResult != nil:
 		if !v.lookupResult.inDictionary {
-			sb.WriteString(" " + errorStyle.Render("Not in my dictionary") + "\n")
-			lines++
+			sf.Text(1, promptLen+inputLen+3, "Not in my dictionary", errorStyle)
 		}
-		if v.lookupResult.apiError != nil {
-			sb.WriteString(errorStyle.Render(" API error: "+v.lookupResult.apiError.Error()) + "\n")
-			lines++
-		} else if len(v.lookupResult.apiResponse.Entries) == 0 {
-			sb.WriteString(" " + errorStyle.Render("No meanings found in API dictionary") + "\n")
-			lines++
+		switch {
+		case v.lookupResult.apiError != nil:
+			sf.Text(4, 1, "API error:", errorStyle)
+			sf.TextWrapped(4, 12, m.width-13, v.lookupResult.apiError.Error())
+		case len(v.lookupResult.apiResponse.Entries) == 0:
+			sf.Text(4, 1, "No meanings found in API dictionary", errorStyle)
 			if v.lookupResult.inDictionary {
-				sb.WriteString(" " + highlightStyle.Render("But word exists in my dictionary") + "\n")
-				lines++
+				sf.Text(5, 1, "But word exists in my dictionary", highlightStyle)
 			}
-		} else {
-			maxLines := m.height - lines - footerLines
-			showLines := v.lookupResult.apiResponse.buildLines(m.width)
-			for l := 0; l < maxLines && (l+v.offsetY) < len(showLines); l++ {
-				sb.WriteString("\n")
-				sb.WriteString(showLines[l+v.offsetY])
-				lines++
+		default:
+			rgn := sf.Region(3, 0, m.height, m.width)
+			row := 0
+			for _, entry := range v.lookupResult.apiResponse.Entries {
+				rgn.Text(row-v.offsetY, 1, " • "+entry.PartOfSpeech, boldStyle)
+				row++
+				maxNumWidth := len(strconv.Itoa(len(entry.Senses))) + 2
+				maxWidth := m.width - maxNumWidth - 5
+				for i, sense := range entry.Senses {
+					rgn.TextRight(row-v.offsetY, 3, maxNumWidth, strconv.Itoa(i+1)+".")
+					row += rgn.TextWrapped(row-v.offsetY, maxNumWidth+4, maxWidth, sense.Definition)
+				}
 			}
+			v.totalRows = row - 1
 		}
 	}
-	sb.WriteString(padLines(m.height - lines - footerLines))
-	return sb.String(), csr
+	return tea.NewCursor(cp+promptLen+2, 2)
 }
 
-func (v *viewLookup) help() string {
-	return "enter: Lookup  •  " + back + ": Back"
+func (v *viewLookup) helpLines() ([]string, *lipgloss.Style) {
+	return []string{enter + ": Lookup  •  " + back + ": Back"}, nil
+}
+
+func (v *viewLookup) menu() []menuItem {
+	return nil
 }
 
 func (v *viewLookup) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
@@ -104,6 +102,26 @@ func (v *viewLookup) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 		}
 	case down:
 		v.offsetY++
+		if v.offsetY > v.totalRows {
+			v.offsetY = v.totalRows
+		}
+	case home:
+		v.offsetY = 0
+	case end:
+		v.offsetY = v.totalRows - (m.height - 7) + 1
+		if v.offsetY < 0 {
+			v.offsetY = 0
+		}
+	case pageUp:
+		v.offsetY -= m.height - 7
+		if v.offsetY < 0 {
+			v.offsetY = 0
+		}
+	case pageDown:
+		v.offsetY += m.height - 7
+		if v.offsetY > v.totalRows {
+			v.offsetY = v.totalRows
+		}
 	case enter:
 		return v.doLookup()
 	}
@@ -238,26 +256,4 @@ func (r *dictionaryResponse) normalize() {
 		}
 	}
 	r.Entries = newEntries
-}
-
-func (r *dictionaryResponse) buildLines(width int) []string {
-	result := make([]string, 0)
-	for _, entry := range r.Entries {
-		result = append(result, boldStyle.Render(" • "+entry.PartOfSpeech))
-		maxNWd := len(strconv.Itoa(len(entry.Senses) + 1))
-		numFmt := "   %" + strconv.Itoa(maxNWd) + "d. "
-		pad := strings.Repeat(" ", 3+maxNWd+2)
-		for i, sense := range entry.Senses {
-			num := fmt.Sprintf(numFmt, i+1)
-			wrapped := wrap(sense.Definition, width-len(num))
-			for w, s := range wrapped {
-				if w == 0 {
-					result = append(result, num+s)
-				} else {
-					result = append(result, pad+s)
-				}
-			}
-		}
-	}
-	return result
 }

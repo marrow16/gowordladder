@@ -3,20 +3,21 @@ package main
 import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"fmt"
+	"github.com/marrow16/gowordladder/cmd/tui/layout"
 	"github.com/marrow16/gowordladder/generator"
-	"strings"
+	"strconv"
 )
 
 type scoresView interface {
 	view
-	viewShow
+	viewShowable
 }
 
 type viewScores struct {
-	backMode mode
-	backView view
-	offsetY  int
+	backMode       mode
+	backView       view
+	offsetY        int
+	wordsDisplayed wordPoints
 }
 
 func (v *viewScores) show(backMode mode, backView view) {
@@ -25,43 +26,33 @@ func (v *viewScores) show(backMode mode, backView view) {
 	v.backView = backView
 }
 
-func (v *viewScores) content(m *model) (string, *tea.Cursor) {
-	const (
-		footerLines = 2
-	)
-	var sb strings.Builder
-	sb.Grow(m.height * m.width)
-	sb.WriteString("\n")
-	lines := 2
-	if len(m.prefs.HighScores) == 0 {
-		sb.WriteString(errorStyle.Render(" No high scores to show"))
-	} else {
-		maxLines := m.height - lines - footerLines
-		showLines := make([]string, 0, len(m.prefs.HighScores)*2)
-		for i, s := range m.prefs.HighScores {
-			showLines = append(showLines,
-				boldStyle.Render(fmt.Sprintf(" %2d. %.0f (%.0f%%)   ", i+1, s.Score, (s.Score/s.MaxScore)*100)),
-				scoreDetailStyle.Render("     "+s.Date+"  ")+
-					highlightStyle.Render(s.StartWord)+scoreDetailStyle.Render(" to ")+highlightStyle.Render(s.EndWord)+
-					scoreDetailStyle.Render(fmt.Sprintf(" (%d rungs)", s.LadderLength)),
-			)
-		}
-		for l := 0; l < maxLines && (l+v.offsetY) < len(showLines); l++ {
-			sb.WriteString(showLines[l+v.offsetY])
-			sb.WriteString("\n")
-			lines++
-		}
+func (v *viewScores) render(sf layout.Surface, m *model) *tea.Cursor {
+	v.wordsDisplayed = make(wordPoints)
+	rgn := sf.Region(1, 1, sf.Height(), sf.Width()-2)
+	for i, s := range m.prefs.HighScores {
+		row := (i - v.offsetY) * 2
+		rgn.TextRight(row, 0, 3, strconv.Itoa(i+1)+".", boldStyle)
+		rgn.Text(row, 4, strconv.FormatFloat(s.Score, 'f', 0, 64)+" ("+strconv.FormatFloat((s.Score/s.MaxScore)*100, 'f', 0, 64)+"%)", boldStyle)
+		rgn.TextRun(row+1, 4, layout.NewRuns(s.Date+"  ", scoreDetailStyle).
+			Add(s.StartWord, highlightStyle).Add(" to ").Add(s.EndWord, highlightStyle).
+			Add("("+strconv.Itoa(s.LadderLength)+" rungs)", scoreDetailStyle))
+		dtWidth := len(s.Date)
+		v.wordsDisplayed.addWord(s.StartWord, row+3, dtWidth+7)
+		v.wordsDisplayed.addWord(s.EndWord, row+3, dtWidth+11+len(s.StartWord))
 	}
-	sb.WriteString(padLines(m.height - lines - footerLines))
-	return sb.String(), nil
+	return nil
 }
 
 var (
 	scoreDetailStyle = lipgloss.NewStyle().Italic(true).Foreground(lipgloss.Color("#888888"))
 )
 
-func (v *viewScores) help() string {
-	return ctrlNew + ": Clear  •  " + ctrlPlay + ": Play again  •  " + back + ": Back"
+func (v *viewScores) helpLines() ([]string, *lipgloss.Style) {
+	return []string{ctrlNew + ": Clear  •  " + ctrlPlay + ": Play again  •  " + back + ": Back"}, nil
+}
+
+func (v *viewScores) menu() []menuItem {
+	return nil
 }
 
 func (v *viewScores) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
@@ -80,11 +71,23 @@ func (v *viewScores) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 		}
 	case up:
 		if v.offsetY > 0 {
-			v.offsetY -= 2
+			v.offsetY--
 		}
 	case down:
-		if (v.offsetY / 2) < len(m.prefs.HighScores)-1 {
-			v.offsetY += 2
+		if v.offsetY+1 < len(m.prefs.HighScores) {
+			v.offsetY++
+		}
+	}
+	return nil
+}
+
+func (v *viewScores) click(m *model, msg tea.Mouse) tea.Cmd {
+	if wd, ok := v.wordsDisplayed[pt{msg.Y, msg.X}]; ok {
+		switch msg.Button {
+		case tea.MouseLeft:
+			return m.lookupWord(wd)
+		case tea.MouseRight:
+			return m.lookupDistance(wd)
 		}
 	}
 	return nil
