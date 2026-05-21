@@ -25,6 +25,7 @@ type menuItem struct {
 }
 
 var baseMenuItems = []menuItem{
+	{text: "Play", key: ctrlPlay},
 	{text: "Generate", key: ctrlGenerate},
 	{text: "Solver", key: ctrlSolver},
 	{text: "Word lookup", key: ctrlWord},

@@ -9,35 +9,35 @@ import (
 
 var expectedDictionarySizes = map[int]int{
 	2:  127,
-	3:  1351,
-	4:  5662,
-	5:  13018,
-	6:  23140,
-	7:  34506,
-	8:  42341,
-	9:  43180,
-	10: 37434,
-	11: 29175,
-	12: 21125,
-	13: 14435,
-	14: 9437,
-	15: 5956,
+	3:  1285,
+	4:  5191,
+	5:  11798,
+	6:  20952,
+	7:  31498,
+	8:  39095,
+	9:  39967,
+	10: 34327,
+	11: 26061,
+	12: 18679,
+	13: 12541,
+	14: 7908,
+	15: 4773,
 }
 var expectedMaxSteps = map[int]int{
 	2:  5,
 	3:  9,
-	4:  16,
-	5:  27,
-	6:  43,
-	7:  61,
-	8:  80,
-	9:  34,
+	4:  17,
+	5:  30,
+	6:  50,
+	7:  53,
+	8:  61,
+	9:  32,
 	10: 11,
-	11: 27,
+	11: 7,
 	12: 7,
 	13: 5,
-	14: 7,
-	15: 5,
+	14: 6,
+	15: 4,
 }
 
 func TestCanLoadDictionariesFromFactory(t *testing.T) {
@@ -73,7 +73,7 @@ func TestSwitchCurrentDictionary(t *testing.T) {
 	defer SwitchCurrentDictionary(defaultDictionary)
 
 	d := NewDictionary(3)
-	assert.Equal(t, 1351, d.Len())
+	assert.Equal(t, 1285, d.Len())
 
 	err := SwitchCurrentDictionary("enwiktionary")
 	require.NoError(t, err)
@@ -99,7 +99,7 @@ func TestDictionaryWordHasVariants(t *testing.T) {
 	d := NewDictionary(3)
 	word, ok := d.Word("cat")
 	assert.True(t, ok)
-	assert.Equal(t, 33, len(word.LinkedWords()))
+	assert.Equal(t, 32, len(word.LinkedWords()))
 	assert.False(t, word.IsIsland())
 }
 

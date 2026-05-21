@@ -58,7 +58,7 @@ func TestWord_IsIsland(t *testing.T) {
 
 func TestWord_IsDoublet(t *testing.T) {
 	d := NewDictionary(4)
-	w, ok := d.Word("upsy")
+	w, ok := d.Word("echo")
 	assert.True(t, ok)
 
 	assert.True(t, w.IsDoublet())

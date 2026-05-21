@@ -235,6 +235,17 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if !m.menu.showing {
 				m.menu.toggle()
 			}
+		case ctrlPlay:
+			switch m.mode {
+			case generate, solve:
+				return m, m.currentView.key(m, mt)
+			case play:
+				// do nothing
+			default:
+				// revert back to play screen
+				m.mode = play
+				m.currentView = m.viewPlay
+			}
 		default:
 			if !m.viewSwitch(mt.String()) {
 				return m, m.currentView.key(m, mt)

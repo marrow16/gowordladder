@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"database/sql"
 	"fmt"
 	"os"
@@ -29,16 +30,29 @@ func main() {
 		os.Exit(1)
 	}
 	defer db.Close()
+	exclusions := map[string]bool{}
+	if len(args) > 1 {
+		excF, err := os.Open(args[1])
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		defer excF.Close()
+		scanner := bufio.NewScanner(excF)
+		for scanner.Scan() {
+			exclusions[strings.ToUpper(scanner.Text())] = true
+		}
+	}
 	name := strings.ToLower(strings.TrimSuffix(filepath.Base(args[0]), filepath.Ext(args[0])))
 	for i := 2; i <= 15; i++ {
-		if err := importWords(name, db, i); err != nil {
+		if err := importWords(name, db, i, exclusions); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
 	}
 }
 
-func importWords(name string, db *sql.DB, wordLen int) error {
+func importWords(name string, db *sql.DB, wordLen int, exclusions map[string]bool) error {
 	const query = `SELECT word
 		FROM words
 		WHERE length = ?
@@ -52,8 +66,10 @@ func importWords(name string, db *sql.DB, wordLen int) error {
 			if err = rows.Scan(&wd); err != nil {
 				return err
 			}
-			if err = imp.AddWord(wd); err != nil {
-				return err
+			if !exclusions[strings.ToUpper(wd)] {
+				if err = imp.AddWord(wd); err != nil {
+					return err
+				}
 			}
 		}
 		if f, err := os.Create(fmt.Sprintf("%s-%d-letters.txt", name, wordLen)); err != nil {

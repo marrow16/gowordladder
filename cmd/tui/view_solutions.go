@@ -125,9 +125,12 @@ func (v *viewSolutions) menu() []menuItem {
 	if !v.showingAnalysis {
 		return []menuItem{
 			{text: "Analyse", key: ctrlAnalyse},
+			{text: "Export", key: ctrlExport},
 		}
 	}
-	return nil
+	return []menuItem{
+		{text: "Export", key: ctrlExport},
+	}
 }
 
 func (v *viewSolutions) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
@@ -143,7 +146,7 @@ func (v *viewSolutions) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 			return v.analyse()
 		}
 	case ctrlExport:
-		go v.export()
+		go exportSolutions(v.solutions)
 	case home:
 		v.offsetX = 0
 		v.offsetY = 0
@@ -249,13 +252,13 @@ func (v *viewSolutions) analyse() tea.Cmd {
 	}
 }
 
-func (v *viewSolutions) export() {
-	if len(v.solutions) > 0 {
-		ladder := v.solutions[0].Ladder()
+func exportSolutions(solutions []*solving.Solution) {
+	if len(solutions) > 0 {
+		ladder := solutions[0].Ladder()
 		fn := fmt.Sprintf("solutions-%s-%s.csv", ladder[0], ladder[len(ladder)-1])
 		if f, err := os.Create(fn); err == nil {
 			defer f.Close()
-			for i, solution := range v.solutions {
+			for i, solution := range solutions {
 				ladder = solution.Ladder()
 				_, _ = fmt.Fprintf(f, "%d,%d", i+1, len(ladder))
 				for _, w := range ladder {

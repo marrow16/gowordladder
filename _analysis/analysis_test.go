@@ -2,13 +2,13 @@ package analysis
 
 import (
 	"fmt"
+	"github.com/marrow16/gowordladder/words"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/text"
 	"gonum.org/v1/plot/vg"
-	"gowordladder/words"
 	"image/color"
 	"io"
 	"math"
@@ -69,7 +69,7 @@ func TestAnalysisReport(t *testing.T) {
 
 	printMdHeader(f, 3, "Word Statistics")
 	printMdNotes(f, "", false,
-		"Lexicon - based on CSW24",
+		"Lexicon - based on default",
 		"Islands - are words that changing any letter will not form another word",
 		"Doublets - are words that changing any letter will only form one other word",
 		"LDS% (local decay smoothness) – the longest consecutive run of ladder lengths for which each word count is at least 95% of the previous ladder length’s count, expressed as a percentage of all ladder lengths in the dictionary",

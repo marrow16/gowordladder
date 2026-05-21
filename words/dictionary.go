@@ -140,23 +140,17 @@ type dictionaryCache struct {
 }
 
 const (
-	defaultDictionary = "csw24"
+	defaultDictionary = "default"
 	envDictionary     = "GOWL_DICTIONARY"
 )
 
 func CurrentDictionary() string {
-	if useDictionary == defaultDictionary {
-		return "default"
-	}
 	return useDictionary
 }
 
 func SwitchCurrentDictionary(source string) error {
 	var err error
 	if internal := strings.ToLower(source); internal == "csw19" || internal == "csw24" || internal == "enwiktionary" || internal == "default" {
-		if internal == "default" {
-			internal = defaultDictionary
-		}
 		useDictionary = internal
 		dictFs = &embeddedDictionaryFs{resources.Files}
 	} else {
@@ -187,9 +181,6 @@ func init() {
 		cache = &dictionaryCache{dictionaries: map[int]*Dictionary{}}
 		if n, ok := os.LookupEnv(envDictionary); ok {
 			if internal := strings.ToLower(n); internal == "csw19" || internal == "csw24" || internal == "enwiktionary" || internal == "default" {
-				if internal == "default" {
-					internal = defaultDictionary
-				}
 				useDictionary = internal
 			} else if xsf, err := newExternalDictionaryFs(n); err == nil {
 				useDictionary = n

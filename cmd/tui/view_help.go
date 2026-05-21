@@ -202,6 +202,13 @@ var helpText = []helpSection{
 			Add("0", helpKeyStyle).Add(" to show words for longest possible ladders."),
 	},
 	{
+		"Terminology",
+		layout.NewRuns("Some of terminology (especially in Word Distances screen) may be unfamiliar:\n").
+			Add("\n").
+			Add("Island word", boldStyle).Add(" - is a word where changing any letter will not result in another valid word.\n").
+			Add("Doublet word", boldStyle).Add(" - is a word where changing any letter will only result in one other valid word."),
+	},
+	{
 		"About",
 		layout.NewRuns("The default built-in dictionary is based on the Official Collins Scrabble Words (2024).\n").
 			Add("\n").

@@ -21,9 +21,9 @@ func TestGeneratePuzzle_cat2dog(t *testing.T) {
 	require.NotNil(t, p)
 	assert.Equal(t, 3, p.WordLength)
 	assert.Equal(t, 5, p.LadderLength)
-	assert.Equal(t, 215, len(p.Solutions))
-	assert.Equal(t, 1163.0, p.MaxScore)
-	assert.Equal(t, 388.0, p.RungScore)
+	assert.Equal(t, 212, len(p.Solutions))
+	assert.Equal(t, 1168.0, p.MaxScore)
+	assert.Equal(t, 390.0, p.RungScore)
 
 	p, err = GeneratePuzzle(3, 4, &start, &end)
 	require.NoError(t, err)
@@ -60,7 +60,7 @@ func TestGeneratePuzzle_code2java(t *testing.T) {
 
 func TestGeneratePuzzle_randomStartWord(t *testing.T) {
 	for wl := 2; wl <= 15; wl++ {
-		p, err := GeneratePuzzle(wl, 5, nil, nil)
+		p, err := GeneratePuzzle(wl, 4, nil, nil)
 		require.NoError(t, err)
 		require.NotNil(t, p.StartWord)
 		require.NotNil(t, p.EndWord)

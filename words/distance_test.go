@@ -24,7 +24,7 @@ func TestWordDistanceMap(t *testing.T) {
 	assert.True(t, ok)
 
 	wordDistMap := NewWordDistanceMap(w, nil)
-	assert.Equal(t, 1350, len(wordDistMap))
+	assert.Equal(t, 1284, len(wordDistMap))
 	dist, ok := wordDistMap.Distance(w)
 	assert.True(t, ok)
 	assert.Equal(t, 1, dist)
@@ -49,7 +49,7 @@ func TestWordDistanceMap_Limited(t *testing.T) {
 
 	limit := 4
 	wordDistMap := NewWordDistanceMap(w, &limit)
-	assert.Equal(t, 1087, len(wordDistMap))
+	assert.Equal(t, 1026, len(wordDistMap))
 	endWord, _ := d.Word("dog")
 	_, hasWord := wordDistMap.Distance(endWord)
 	assert.True(t, hasWord)
@@ -61,7 +61,7 @@ func TestWordDistanceMap_Limited(t *testing.T) {
 	// limit further...
 	limit = 3
 	wordDistMap = NewWordDistanceMap(w, &limit)
-	assert.Equal(t, 348, len(wordDistMap))
+	assert.Equal(t, 334, len(wordDistMap))
 	_, hasWord = wordDistMap.Distance(endWord)
 	assert.False(t, hasWord)
 }
@@ -73,7 +73,7 @@ func TestWordDistanceMap_Words(t *testing.T) {
 
 	limit := 3
 	wordDistMap := NewWordDistanceMap(w, &limit)
-	assert.Len(t, wordDistMap.Words(), 347)
+	assert.Len(t, wordDistMap.Words(), 333)
 }
 
 func TestWordDistanceMap_WordsAt(t *testing.T) {
@@ -82,7 +82,7 @@ func TestWordDistanceMap_WordsAt(t *testing.T) {
 	assert.True(t, ok)
 
 	wordDistMap := NewWordDistanceMap(w, nil)
-	assert.Len(t, wordDistMap.WordsAt(2), 33)
+	assert.Len(t, wordDistMap.WordsAt(2), 32)
 	assert.Len(t, wordDistMap.WordsAt(w.MaxSteps()), 1)
 }
 

@@ -3,8 +3,10 @@ package main
 import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"fmt"
 	"github.com/marrow16/gowordladder/cmd/tui/layout"
 	"github.com/marrow16/gowordladder/words"
+	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -63,6 +65,13 @@ func (v *viewDistances) render(sf layout.Surface, m *model) *tea.Cursor {
 			case distancesLongests:
 				sf.TextRun(3, 1, header.Add(": ").Add(commas(len(v.distancesResult.distances[1])), highlightStyle).Add(" words (word length "+strconv.Itoa(v.distancesResult.wordLength)+")"))
 				v.showDistances(m.width, sf)
+			case distancesOverall:
+				if v.distancesResult.wordLength > 0 {
+					sf.TextRun(3, 1, header.Add(": Word length "+strconv.Itoa(v.distancesResult.wordLength)))
+				} else {
+					sf.TextRun(3, 1, header)
+				}
+				v.showAnalysis(m.width, sf)
 			default:
 				if len(v.distancesResult.distances[1]) == 0 {
 					sf.TextRun(3, 1, header.Add(": None for word length "+strconv.Itoa(v.distancesResult.wordLength)))
@@ -156,29 +165,58 @@ func (v *viewDistances) menu() []menuItem {
 			{text: "Islands", key: "1"},
 			{text: "Doublets", key: "2"},
 			{text: "Longest ladders", key: "0"},
+			{},
+			{text: "Export", key: ctrlExport},
+		}
+	} else if v.distancesResult != nil && v.distancesResult.mode != distancesOverall {
+		return []menuItem{
+			{text: "Distances", key: enter},
+			{text: "Islands", key: "1"},
+			{text: "Doublets", key: "2"},
+			{text: "Longest ladders", key: "0"},
+			{},
+			{text: "Export", key: ctrlExport},
 		}
 	}
 	return []menuItem{
 		{text: "Distances", key: enter},
-		{text: "Islands", key: "1"},
-		{text: "Doublets", key: "2"},
-		{text: "Longest ladders", key: "0"},
 	}
 }
 
 func (v *viewDistances) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
-	case "0", "+":
+	case "0":
 		return v.doLongests()
 	case "1":
 		return v.doIslands()
 	case "2":
 		return v.doDoublets()
+	case "+":
+		return v.doOverallAnalysisSpread()
+	case "-":
+		return v.doOverallAnalysisGraph()
+	case "=":
+		return v.doOverallAnalysisAdjacents()
+	case "_":
+		return v.doOverallAnalysisWordCounts()
 	case ctrlAnalyse:
 		if v.distancesResult != nil && v.distancesResult.mode == distancesNormal {
 			v.offsetY = 0
 			v.offsetX = 0
 			v.distancesResult.mode = distancesAnalysis
+		}
+	case ctrlExport:
+		if v.distancesResult != nil {
+			switch v.distancesResult.mode {
+			case distancesNormal, distancesAnalysis:
+				go exportDistances(*v.distancesResult)
+			case distancesIslands:
+				go exportIslands(*v.distancesResult)
+			case distancesDoublets:
+				go exportDoublets(*v.distancesResult)
+			case distancesLongests:
+				go exportLongestLadders(*v.distancesResult)
+			}
 		}
 	case back:
 		if v.distancesResult != nil && v.distancesResult.mode == distancesAnalysis {
@@ -263,6 +301,64 @@ func (v *viewDistances) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 		}
 	}
 	return nil
+}
+
+func exportDistances(dr distancesResult) {
+	if f, err := os.Create(fmt.Sprintf("word-distances-%s.csv", dr.word)); err == nil {
+		defer f.Close()
+		_, _ = f.WriteString("Word,Distance,To Word\n")
+		for d := 1; d <= dr.maxLadderLength; d++ {
+			if wds, ok := dr.distances[d]; ok {
+				for _, wd := range wds {
+					_, _ = f.WriteString(dr.word)
+					_, _ = f.WriteString(",")
+					_, _ = f.WriteString(strconv.Itoa(d))
+					_, _ = f.WriteString(",")
+					_, _ = f.WriteString(wd)
+					_, _ = f.WriteString("\n")
+				}
+			}
+		}
+	}
+}
+
+func exportIslands(dr distancesResult) {
+	if f, err := os.Create(fmt.Sprintf("islands-%d-letters.csv", dr.wordLength)); err == nil {
+		defer f.Close()
+		if wds, ok := dr.distances[1]; ok {
+			for _, wd := range wds {
+				_, _ = f.WriteString(wd)
+				_, _ = f.WriteString("\n")
+			}
+		}
+	}
+}
+
+func exportDoublets(dr distancesResult) {
+	if f, err := os.Create(fmt.Sprintf("doublets-%d-letters.csv", dr.wordLength)); err == nil {
+		defer f.Close()
+		if wds, ok := dr.distances[1]; ok {
+			for _, wd := range wds {
+				_, _ = f.WriteString(wd)
+				_, _ = f.WriteString("\n")
+			}
+		}
+	}
+}
+
+func exportLongestLadders(dr distancesResult) {
+	if f, err := os.Create(fmt.Sprintf("longest-ladders-%d-letters.csv", dr.wordLength)); err == nil {
+		defer f.Close()
+		if wds, ok := dr.distances[1]; ok {
+			_, _ = f.WriteString("Word,Ladder length\n")
+			for _, wd := range wds {
+				_, _ = f.WriteString(wd)
+				_, _ = f.WriteString(",")
+				_, _ = f.WriteString(strconv.Itoa(dr.longestLadder))
+				_, _ = f.WriteString("\n")
+			}
+		}
+	}
 }
 
 func (v *viewDistances) pageWidth(m *model) int {
@@ -359,6 +455,7 @@ const (
 	distancesDoublets
 	distancesLongests
 	distancesAnalysis
+	distancesOverall
 )
 
 type distancesResult struct {
@@ -370,6 +467,7 @@ type distancesResult struct {
 	maxWords        int
 	maxWordsAt      int
 	distances       map[int][]string
+	longestLadder   int
 	mode            distancesMode
 }
 
@@ -443,7 +541,8 @@ func (v *viewDistances) doLongests() tea.Cmd {
 				distances: map[int][]string{
 					1: longests,
 				},
-				mode: distancesLongests,
+				longestLadder: mxll,
+				mode:          distancesLongests,
 			}
 		}
 	}
@@ -504,4 +603,150 @@ func (v *viewDistances) doDoublets() tea.Cmd {
 		}
 	}
 	return nil
+}
+
+func (v *viewDistances) doOverallAnalysisSpread() tea.Cmd {
+	if l := len(v.input.value()); l >= 2 {
+		v.distancesResult = nil
+		v.offsetX = 0
+		v.offsetY = 0
+		return func() tea.Msg {
+			dict := words.NewDictionary(l)
+			mxll := dict.MaxSteps()
+			tots := make(map[int]int, mxll)
+			for _, wd := range dict.Words() {
+				mwl := wd.MaxSteps()
+				tots[mwl] = tots[mwl] + 1
+			}
+			overall := make(map[int][]string, mxll)
+			maxWords := 0
+			for ll := 1; ll <= mxll; ll++ {
+				if tots[ll] > maxWords {
+					maxWords = tots[ll]
+				}
+				overall[ll] = make([]string, tots[ll])
+			}
+			return distancesResult{
+				word:            "Overall Distances (spread)",
+				inDictionary:    true,
+				wordLength:      l,
+				maxLadderLength: mxll,
+				maxWords:        maxWords,
+				maxWordsAt:      1,
+				distances:       overall,
+				mode:            distancesOverall,
+			}
+		}
+	}
+	return nil
+}
+
+func (v *viewDistances) doOverallAnalysisGraph() tea.Cmd {
+	if l := len(v.input.value()); l >= 2 {
+		v.distancesResult = nil
+		v.offsetX = 0
+		v.offsetY = 0
+		return func() tea.Msg {
+			dict := words.NewDictionary(l)
+			mxll := dict.MaxSteps()
+			tots := make(map[int]int, mxll)
+			for _, wd := range dict.Words() {
+				mwl := wd.MaxSteps()
+				if mwl == 1 || mwl == 2 {
+					tots[mwl] = tots[mwl] + 1
+				} else {
+					for i := 3; i <= mwl; i++ {
+						tots[i] = tots[i] + 1
+					}
+				}
+			}
+			overall := make(map[int][]string, mxll)
+			maxWords := 0
+			for ll := 1; ll <= mxll; ll++ {
+				if tots[ll] > maxWords {
+					maxWords = tots[ll]
+				}
+				overall[ll] = make([]string, tots[ll])
+			}
+			return distancesResult{
+				word:            "Overall Distances (graph)",
+				inDictionary:    true,
+				wordLength:      l,
+				maxLadderLength: mxll,
+				maxWords:        maxWords,
+				maxWordsAt:      1,
+				distances:       overall,
+				mode:            distancesOverall,
+			}
+		}
+	}
+	return nil
+}
+
+func (v *viewDistances) doOverallAnalysisAdjacents() tea.Cmd {
+	if l := len(v.input.value()); l >= 2 {
+		v.distancesResult = nil
+		v.offsetX = 0
+		v.offsetY = 0
+		return func() tea.Msg {
+			dict := words.NewDictionary(l)
+			tots := make(map[int]int)
+			maxAdjs := 0
+			for _, wd := range dict.Words() {
+				if adjs := len(wd.LinkedWords()); adjs > 0 {
+					if adjs > maxAdjs {
+						maxAdjs = adjs
+					}
+					tots[adjs] = tots[adjs] + 1
+				}
+			}
+			maxWords := 0
+			overall := make(map[int][]string, maxAdjs)
+			for k, val := range tots {
+				if val > maxWords {
+					maxWords = val
+				}
+				overall[k] = make([]string, val)
+			}
+			return distancesResult{
+				word:            "Overall Adjacent Words",
+				inDictionary:    true,
+				wordLength:      l,
+				maxLadderLength: maxAdjs,
+				maxWords:        maxWords,
+				maxWordsAt:      1,
+				distances:       overall,
+				mode:            distancesOverall,
+			}
+		}
+	}
+	return nil
+}
+
+func (v *viewDistances) doOverallAnalysisWordCounts() tea.Cmd {
+	v.distancesResult = nil
+	v.offsetX = 0
+	v.offsetY = 0
+	return func() tea.Msg {
+		maxWords := 0
+		overall := make(map[int][]string)
+		for wl := 2; wl <= 15; wl++ {
+			dict := words.NewDictionary(wl)
+			wc := dict.Len()
+			overall[wl] = make([]string, wc)
+			if wc > maxWords {
+				maxWords = wc
+			}
+		}
+		return distancesResult{
+			word:            "Overall Word Counts",
+			inDictionary:    true,
+			wordLength:      0,
+			maxLadderLength: 15,
+			maxWords:        maxWords,
+			maxWordsAt:      1,
+			distances:       overall,
+			mode:            distancesOverall,
+		}
+	}
 }

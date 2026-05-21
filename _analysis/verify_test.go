@@ -2,8 +2,8 @@ package analysis
 
 import (
 	"fmt"
+	"github.com/marrow16/gowordladder/words"
 	"github.com/stretchr/testify/assert"
-	"gowordladder/words"
 	"slices"
 	"strings"
 	"testing"
