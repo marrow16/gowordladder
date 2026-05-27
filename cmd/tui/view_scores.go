@@ -19,6 +19,8 @@ type viewScores struct {
 	offsetY        int
 	error          string
 	wordsDisplayed wordPoints
+	scrollbar      layout.Scrollbar
+	maxItems       int
 }
 
 func (v *viewScores) show(backMode mode, backView view) {
@@ -29,19 +31,52 @@ func (v *viewScores) show(backMode mode, backView view) {
 
 func (v *viewScores) render(sf layout.Surface, m *model) *tea.Cursor {
 	v.wordsDisplayed = make(wordPoints)
-	rgn := sf.Region(1, 1, sf.Height(), sf.Width()-2)
+	v.maxItems = len(m.prefs.HighScores)
 	for i, s := range m.prefs.HighScores {
 		row := (i - v.offsetY) * 2
-		rgn.TextRight(row, 0, 3, strconv.Itoa(i+1)+".", boldStyle)
-		rgn.Text(row, 4, strconv.FormatFloat(s.Score, 'f', 0, 64)+" ("+strconv.FormatFloat((s.Score/s.MaxScore)*100, 'f', 0, 64)+"%)", boldStyle)
-		rgn.TextRun(row+1, 4, layout.NewRuns(s.Date+"  ", scoreDetailStyle).
+		sf.TextRight(row, 1, 3, strconv.Itoa(i+1)+".", boldStyle)
+		sf.Text(row, 5, strconv.FormatFloat(s.Score, 'f', 0, 64)+" ("+strconv.FormatFloat((s.Score/s.MaxScore)*100, 'f', 0, 64)+"%)", boldStyle)
+		sf.TextRun(row+1, 5, layout.NewRuns(s.Date+"  ", scoreDetailStyle).
 			Add(s.StartWord, highlightStyle).Add(" to ").Add(s.EndWord, highlightStyle).
 			Add(" ("+strconv.Itoa(s.LadderLength)+" rungs)", scoreDetailStyle))
 		dtWidth := len(s.Date)
-		v.wordsDisplayed.addWord(s.StartWord, row+3, dtWidth+7)
-		v.wordsDisplayed.addWord(s.EndWord, row+3, dtWidth+11+len(s.StartWord))
+		v.wordsDisplayed.addWord(s.StartWord, sf.AbsoluteTop()+row+1, sf.AbsoluteLeft()+dtWidth+7)
+		v.wordsDisplayed.addWord(s.EndWord, sf.AbsoluteTop()+row+1, sf.AbsoluteLeft()+dtWidth+11+len(s.StartWord))
+	}
+	if v.maxItems > 1 {
+		v.scrollbar = layout.NewVerticalScrollbar(v.scrollHandler).ItemSize(2)
+		v.scrollbar.Draw(sf, v.maxItems+(sf.Height()/2)-2, v.offsetY)
+	} else {
+		v.scrollbar = nil
 	}
 	return nil
+}
+
+func (v *viewScores) scroll(msg tea.Msg) (handled bool) {
+	if v.scrollbar != nil {
+		return v.scrollbar.Update(msg)
+	}
+	return false
+}
+
+func (v *viewScores) scrollHandler(evt layout.ScrollEvent) {
+	v.error = ""
+	switch evt {
+	case layout.ScrollUp, layout.ScrollPageUp:
+		v.offsetY--
+		if v.offsetY < 0 {
+			v.offsetY = 0
+		}
+	case layout.ScrollDown, layout.ScrollPageDown:
+		v.offsetY++
+		if v.offsetY > v.maxItems-1 {
+			v.offsetY = v.maxItems - 1
+		}
+	case layout.ScrollHome:
+		v.offsetY = 0
+	case layout.ScrollEnd:
+		v.offsetY = v.maxItems - 1
+	}
 }
 
 var (
@@ -52,15 +87,15 @@ func (v *viewScores) helpLines() ([]string, *lipgloss.Style) {
 	if v.error != "" {
 		return []string{
 			v.error,
-			ctrlPlay + ": Play again  •  " + ctrlNew + ": Clear  •  " + back + ": Back",
+			ctrlAgain + ": Play again  •  " + ctrlNew + ": Clear  •  " + back + ": Back",
 		}, &errorStyle
 	}
-	return []string{ctrlPlay + ": Play again  •  " + ctrlNew + ": Clear  •  " + back + ": Back"}, nil
+	return []string{ctrlAgain + ": Play again  •  " + ctrlNew + ": Clear  •  " + back + ": Back"}, nil
 }
 
 func (v *viewScores) menu() []menuItem {
 	return []menuItem{
-		{text: "Play again", key: ctrlPlay},
+		{text: "Play again", key: ctrlAgain},
 		{text: "Clear", key: ctrlNew},
 	}
 }
@@ -70,31 +105,24 @@ func (v *viewScores) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
 	case back, backspace:
 		m.restoreView(highs, v.backMode, v.backView)
-	case ctrlNew:
-		v.offsetY = 0
-		m.clearScores()
-	case ctrlPlay:
-		if h := v.offsetY; h >= 0 && h < len(m.prefs.HighScores) {
-			hs := m.prefs.HighScores[h]
+	case ctrlAgain:
+		if v.offsetY >= 0 && v.offsetY < len(m.prefs.HighScores) {
+			hs := m.prefs.HighScores[v.offsetY]
 			if puzzle, err := generator.GeneratePuzzle(hs.WordLength, hs.LadderLength, &hs.StartWord, &hs.EndWord); err == nil {
 				m.play(*puzzle)
 			} else {
 				v.error = err.Error()
 			}
 		}
-	case up:
-		if v.offsetY > 0 {
-			v.offsetY--
-		}
-	case down:
-		if v.offsetY+1 < len(m.prefs.HighScores) {
-			v.offsetY++
-		}
+	case ctrlNew:
+		v.offsetY = 0
+		m.clearScores()
 	}
 	return nil
 }
 
 func (v *viewScores) click(m *model, msg tea.Mouse) tea.Cmd {
+	v.error = ""
 	if wd, ok := v.wordsDisplayed[pt{msg.Y, msg.X}]; ok {
 		switch msg.Button {
 		case tea.MouseLeft:

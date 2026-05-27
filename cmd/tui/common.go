@@ -1,6 +1,9 @@
 package main
 
-import "charm.land/lipgloss/v2"
+import (
+	"charm.land/lipgloss/v2"
+	"github.com/marrow16/gowordladder/cmd/tui/layout"
+)
 
 type pt [2]int //Y,X
 // wordPoints is a map of words displayed on screen (for clicking)
@@ -9,6 +12,12 @@ type wordPoints map[pt]string
 func (wp wordPoints) addWord(word string, y, x int) {
 	for l := 0; l <= len(word); l++ {
 		wp[pt{y, x + l}] = word
+	}
+}
+
+func (wp wordPoints) add(p layout.Placement) {
+	for l := 0; l < p.Extent; l++ {
+		wp[pt{p.Row, p.Col + l}] = p.Text
 	}
 }
 

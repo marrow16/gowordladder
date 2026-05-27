@@ -21,10 +21,10 @@ type viewLookup struct {
 	backMode         mode
 	backView         view
 	offsetY          int
-	totalRows        int
 	input            input
 	lookupResult     *lookupResult
 	variationsResult *variationsResult
+	scrollbar        layout.Scrollbar
 }
 
 func (v *viewLookup) render(sf layout.Surface, m *model) *tea.Cursor {
@@ -33,39 +33,40 @@ func (v *viewLookup) render(sf layout.Surface, m *model) *tea.Cursor {
 		promptLen = len(prompt)
 		inputLen  = 15
 	)
+	v.scrollbar = nil
 	sf.TextRight(1, 0, promptLen+1, prompt)
 	sf.TextFixed(1, promptLen+2, inputLen, v.input.value(), inputStyle)
 	cp := v.input.cursorPos()
 	sf.Block(2, 0, m.width, '─', helpStyle)
+	rgn := sf.Region(3, 0, m.height, m.width)
 	switch {
 	case v.variationsResult != nil && len(v.variationsResult.variations) == 0:
-		sf.Text(4, 1, "No variations found", errorStyle)
+		rgn.Text(1, 1, "No variations found", errorStyle)
 	case v.variationsResult != nil:
 		const (
 			title    = "Variations:"
 			titleLen = len(title) + 2
 		)
-		sf.Text(4, 1, title)
+		sf.Text(1, 1, title)
 		vs := make([]string, len(v.variationsResult.variations))
 		for i, vwd := range v.variationsResult.variations {
 			vs[i] = vwd.String()
 		}
-		sf.TextWrapped(4, titleLen, m.width-titleLen, strings.Join(vs, ", "))
+		sf.TextWrapped(1, titleLen, m.width-titleLen, strings.Join(vs, ", "))
 	case v.lookupResult != nil:
 		if !v.lookupResult.inDictionary {
 			sf.Text(1, promptLen+inputLen+3, "Not in my dictionary", errorStyle)
 		}
 		switch {
 		case v.lookupResult.apiError != nil:
-			sf.Text(4, 1, "API error:", errorStyle)
-			sf.TextWrapped(4, 12, m.width-13, v.lookupResult.apiError.Error())
+			rgn.Text(1, 1, "API error:", errorStyle)
+			rgn.TextWrapped(1, 12, m.width-13, v.lookupResult.apiError.Error())
 		case len(v.lookupResult.apiResponse.Entries) == 0:
-			sf.Text(4, 1, "No meanings found in API dictionary", errorStyle)
+			rgn.Text(1, 1, "No meanings found in API dictionary", errorStyle)
 			if v.lookupResult.inDictionary {
-				sf.Text(5, 1, "But word exists in my dictionary", highlightStyle)
+				rgn.Text(2, 1, "But word exists in my dictionary", highlightStyle)
 			}
 		default:
-			rgn := sf.Region(3, 0, m.height, m.width)
 			row := 0
 			for _, entry := range v.lookupResult.apiResponse.Entries {
 				rgn.Text(row-v.offsetY, 1, " • "+entry.PartOfSpeech, boldStyle)
@@ -77,10 +78,24 @@ func (v *viewLookup) render(sf layout.Surface, m *model) *tea.Cursor {
 					row += rgn.TextWrapped(row-v.offsetY, maxNumWidth+4, maxWidth, sense.Definition)
 				}
 			}
-			v.totalRows = row - 1
+			if row-1 > rgn.Height() {
+				v.scrollbar = layout.NewVerticalScrollbar(v.scrollHandler)
+				v.scrollbar.Draw(rgn, row-1, v.offsetY)
+			}
 		}
 	}
-	return tea.NewCursor(cp+promptLen+2, 2)
+	return tea.NewCursor(sf.AbsoluteLeft()+cp+promptLen+2, sf.AbsoluteTop()+1)
+}
+
+func (v *viewLookup) scroll(msg tea.Msg) (handled bool) {
+	if v.scrollbar != nil {
+		return v.scrollbar.Update(msg)
+	}
+	return false
+}
+
+func (v *viewLookup) scrollHandler(evt layout.ScrollEvent) {
+	v.offsetY = v.scrollbar.NewPosition(v.offsetY, evt)
 }
 
 func (v *viewLookup) helpLines() ([]string, *lipgloss.Style) {
@@ -96,32 +111,6 @@ func (v *viewLookup) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	case back:
 		m.restoreView(lookup, v.backMode, v.backView)
 		return nil
-	case up:
-		if v.offsetY > 0 {
-			v.offsetY--
-		}
-	case down:
-		v.offsetY++
-		if v.offsetY > v.totalRows {
-			v.offsetY = v.totalRows
-		}
-	case home:
-		v.offsetY = 0
-	case end:
-		v.offsetY = v.totalRows - (m.height - 7) + 1
-		if v.offsetY < 0 {
-			v.offsetY = 0
-		}
-	case pageUp:
-		v.offsetY -= m.height - 7
-		if v.offsetY < 0 {
-			v.offsetY = 0
-		}
-	case pageDown:
-		v.offsetY += m.height - 7
-		if v.offsetY > v.totalRows {
-			v.offsetY = v.totalRows
-		}
 	case enter:
 		return v.doLookup()
 	}

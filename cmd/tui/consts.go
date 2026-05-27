@@ -38,6 +38,7 @@ const (
 	ctrlHelp       = "ctrl+h"
 	ctrlFill       = "ctrl+f"
 	ctrlAnalyse    = "ctrl+a"
+	ctrlAgain      = "ctrl+a"
 	ctrlExport     = "ctrl+x"
 	ctrlOpen       = "ctrl+o"
 	exit           = "esc"

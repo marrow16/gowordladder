@@ -19,6 +19,7 @@ type viewDistances struct {
 	input            input
 	distancesResult  *distancesResult
 	wordsDisplayed   wordPoints
+	scrollbar        layout.Scrollbar
 }
 
 func (v *viewDistances) render(sf layout.Surface, m *model) *tea.Cursor {
@@ -27,6 +28,7 @@ func (v *viewDistances) render(sf layout.Surface, m *model) *tea.Cursor {
 		promptLen = len(prompt)
 		inputLen  = 15
 	)
+	v.scrollbar = nil
 	v.wordsDisplayed = make(wordPoints)
 	sf.TextRight(1, 0, promptLen+1, prompt)
 	sf.TextFixed(1, promptLen+2, inputLen, v.input.value(), inputStyle)
@@ -46,10 +48,10 @@ func (v *viewDistances) render(sf layout.Surface, m *model) *tea.Cursor {
 					sf.TextRun(3, 1, header.Add(" is an island word (no ladders)"))
 				case 2:
 					sf.TextRun(3, 1, header.Add(" Max ladder length: "+strconv.Itoa(v.distancesResult.maxLadderLength)))
-					v.showDistances(m.width, sf)
+					v.showDistances(m, sf)
 				default:
 					sf.TextRun(3, 1, header.Add(" Max ladder length: "+strconv.Itoa(v.distancesResult.maxLadderLength)+"  Max words: "+strconv.Itoa(v.distancesResult.maxWords)+" (@"+strconv.Itoa(v.distancesResult.maxWordsAt)+")"))
-					v.showDistances(m.width, sf)
+					v.showDistances(m, sf)
 				}
 			case distancesAnalysis:
 				switch v.distancesResult.maxLadderLength {
@@ -57,27 +59,31 @@ func (v *viewDistances) render(sf layout.Surface, m *model) *tea.Cursor {
 					sf.TextRun(3, 1, header.Add(" is an island word (no ladders)"))
 				case 2:
 					sf.TextRun(3, 1, header.Add(" Max ladder length: "+strconv.Itoa(v.distancesResult.maxLadderLength)))
-					v.showAnalysis(m.width, sf)
+					v.showAnalysis(m, sf)
 				default:
 					sf.TextRun(3, 1, header.Add(" Max ladder length: "+strconv.Itoa(v.distancesResult.maxLadderLength)+"  Max words: "+strconv.Itoa(v.distancesResult.maxWords)+" (@"+strconv.Itoa(v.distancesResult.maxWordsAt)+")"))
-					v.showAnalysis(m.width, sf)
+					v.showAnalysis(m, sf)
 				}
 			case distancesLongests:
 				sf.TextRun(3, 1, header.Add(": ").Add(commas(len(v.distancesResult.distances[1])), highlightStyle).Add(" words (word length "+strconv.Itoa(v.distancesResult.wordLength)+")"))
-				v.showDistances(m.width, sf)
+				v.showDistances(m, sf)
 			case distancesOverall:
 				if v.distancesResult.wordLength > 0 {
 					sf.TextRun(3, 1, header.Add(": Word length "+strconv.Itoa(v.distancesResult.wordLength)))
 				} else {
 					sf.TextRun(3, 1, header)
 				}
-				v.showAnalysis(m.width, sf)
+				v.showAnalysis(m, sf)
 			default:
 				if len(v.distancesResult.distances[1]) == 0 {
 					sf.TextRun(3, 1, header.Add(": None for word length "+strconv.Itoa(v.distancesResult.wordLength)))
+				} else if v.distancesResult.totalWords > 0 {
+					perc := (float64(len(v.distancesResult.distances[1])) / float64(v.distancesResult.totalWords)) * 100.0
+					sf.TextRun(3, 1, header.Add(": ").Add(commas(len(v.distancesResult.distances[1])), highlightStyle).Add(" words "+strconv.FormatFloat(perc, 'f', 1, 64)+"% (word length "+strconv.Itoa(v.distancesResult.wordLength)+")"))
+					v.showDistances(m, sf)
 				} else {
 					sf.TextRun(3, 1, header.Add(": ").Add(commas(len(v.distancesResult.distances[1])), highlightStyle).Add(" words (word length "+strconv.Itoa(v.distancesResult.wordLength)+")"))
-					v.showDistances(m.width, sf)
+					v.showDistances(m, sf)
 				}
 			}
 		}
@@ -85,24 +91,28 @@ func (v *viewDistances) render(sf layout.Surface, m *model) *tea.Cursor {
 	return tea.NewCursor(cp+promptLen+2, 2)
 }
 
-func (v *viewDistances) showAnalysis(width int, sf layout.Surface) {
+func (v *viewDistances) showAnalysis(m *model, sf layout.Surface) {
 	rgn := sf.Region(4, 0, sf.Height(), sf.Width())
 	maxLines := rgn.Height()
 	maxWords := v.distancesResult.maxWords
 	maxNumWidth := len(strconv.Itoa(maxWords))
-	barWidth := width - maxNumWidth - 8
+	barWidth := rgn.Width() - maxNumWidth - 10
 	for l := 0; l < maxLines && l+v.offsetY < v.distancesResult.maxLadderLength; l++ {
 		rgn.TextRight(l, 1, 4, strconv.Itoa(l+v.offsetY+1)+":", helpStyle)
 		wordsCount := len(v.distancesResult.distances[l+v.offsetY+1])
 		rgn.TextRight(l, 6, maxNumWidth, strconv.Itoa(wordsCount))
 		rgn.Block(l, 7+maxNumWidth, (wordsCount*barWidth)/maxWords, '█', helpStyle)
 	}
+	if v.distancesResult.maxLadderLength > rgn.Height() {
+		v.scrollbar = layout.NewVerticalScrollbar(v.scrollHandler(m))
+		v.scrollbar.Draw(rgn, v.distancesResult.maxLadderLength, v.offsetY)
+	}
 }
 
-func (v *viewDistances) showDistances(width int, sf layout.Surface) {
+func (v *viewDistances) showDistances(m *model, sf layout.Surface) {
 	columnWidth := v.distancesResult.wordLength + 4
 	numWidth := len(strconv.Itoa(v.distancesResult.maxWords))
-	across := (width - numWidth - 3) / columnWidth
+	across := (m.width - numWidth - 3) / columnWidth
 	boxTop := topLeft + strings.Repeat(horizontal, v.distancesResult.wordLength) + topRight
 	wdY := 5
 	showTop := v.offsetY == 0
@@ -136,12 +146,45 @@ func (v *viewDistances) showDistances(width int, sf layout.Surface) {
 			switch {
 			case wn < len(wds):
 				rgn.Text(l, col, vertical, helpStyle)
-				rgn.Text(l, colW, wds[wn])
+				v.wordsDisplayed.add(rgn.Text(l, colW, wds[wn]))
 				rgn.Text(l, colE, vertical, helpStyle)
-				v.wordsDisplayed.addWord(wds[wn], wdY+l+1, colW)
 			case wn == len(wds):
 				rgn.Text(l, (s*columnWidth)+numWidth+2, boxBottom, helpStyle)
 			}
+		}
+	}
+	srgn := sf.Region(5, 0, sf.Height(), sf.Width())
+	if v.distancesResult.maxWords+2 > srgn.Height() {
+		v.scrollbar = layout.NewVerticalScrollbar(v.scrollHandler(m))
+		v.scrollbar.Draw(srgn, v.distancesResult.maxWords, v.offsetY)
+	}
+}
+
+func (v *viewDistances) scroll(msg tea.Msg) (handled bool) {
+	if v.scrollbar != nil {
+		switch msg.(type) {
+		case tea.MouseClickMsg:
+			return v.scrollbar.Update(msg)
+		}
+	}
+	return false
+}
+
+func (v *viewDistances) scrollHandler(m *model) layout.ScrollHandler {
+	return func(evt layout.ScrollEvent) {
+		switch evt {
+		case layout.ScrollUp:
+			v.key(m, tea.KeyPressMsg{Text: up})
+		case layout.ScrollDown:
+			v.key(m, tea.KeyPressMsg{Text: down})
+		case layout.ScrollPageUp:
+			v.key(m, tea.KeyPressMsg{Text: pageUp})
+		case layout.ScrollPageDown:
+			v.key(m, tea.KeyPressMsg{Text: pageDown})
+		case layout.ScrollHome:
+			v.key(m, tea.KeyPressMsg{Text: home})
+		case layout.ScrollEnd:
+			v.key(m, tea.KeyPressMsg{Text: end})
 		}
 	}
 }
@@ -258,7 +301,7 @@ func (v *viewDistances) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 					v.offsetY++
 				}
 			default:
-				if v.offsetY+15 < v.distancesResult.maxWords {
+				if v.offsetY+m.height-10 < v.distancesResult.maxWords {
 					v.offsetY++
 				}
 			}
@@ -466,6 +509,7 @@ type distancesResult struct {
 	maxLadderLength int
 	maxWords        int
 	maxWordsAt      int
+	totalWords      int
 	distances       map[int][]string
 	longestLadder   int
 	mode            distancesMode
@@ -567,6 +611,7 @@ func (v *viewDistances) doIslands() tea.Cmd {
 				maxLadderLength: 1,
 				maxWords:        len(islands),
 				maxWordsAt:      1,
+				totalWords:      dict.Len(),
 				distances: map[int][]string{
 					1: islands,
 				},
@@ -595,6 +640,7 @@ func (v *viewDistances) doDoublets() tea.Cmd {
 				maxLadderLength: 1,
 				maxWords:        len(doublets),
 				maxWordsAt:      1,
+				totalWords:      dict.Len(),
 				distances: map[int][]string{
 					1: doublets,
 				},

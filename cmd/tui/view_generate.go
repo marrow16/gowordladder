@@ -124,8 +124,7 @@ func (v *viewGenerate) render(sf layout.Surface, m *model) *tea.Cursor {
 		if v.startWord != nil {
 			sw = v.startWord.String()
 		}
-		v.wordsDisplayed.addWord(sw, 4, promptLen+2)
-		sf.TextFixed(3, promptLen+2, v.wordLen, sw, inputStyle)
+		v.wordsDisplayed.add(sf.TextFixed(3, promptLen+2, v.wordLen, sw, inputStyle))
 		sf.TextRight(4, 1, promptLen, promptEndWord)
 		if v.currentInput == nil {
 			v.currentInput = &wordInput{maxLength: v.wordLen}
@@ -149,8 +148,7 @@ func (v *viewGenerate) render(sf layout.Surface, m *model) *tea.Cursor {
 		} else if v.puzzle != nil {
 			sw = v.puzzle.StartWord.String()
 		}
-		v.wordsDisplayed.addWord(sw, 4, promptLen+2)
-		sf.TextFixed(3, promptLen+2, v.wordLen, sw, inputStyle)
+		v.wordsDisplayed.add(sf.TextFixed(3, promptLen+2, v.wordLen, sw, inputStyle))
 		sf.TextRight(4, 1, promptLen, promptEndWord)
 		ew := ""
 		if v.endWord != nil {
@@ -158,8 +156,7 @@ func (v *viewGenerate) render(sf layout.Surface, m *model) *tea.Cursor {
 		} else if v.puzzle != nil {
 			ew = v.puzzle.EndWord.String()
 		}
-		v.wordsDisplayed.addWord(ew, 5, promptLen+2)
-		sf.TextFixed(4, promptLen+2, v.wordLen, ew, inputStyle)
+		v.wordsDisplayed.add(sf.TextFixed(4, promptLen+2, v.wordLen, ew, inputStyle))
 		if v.currentError != "" {
 			sf.Text(6, 1, v.currentError, errorStyle)
 		} else {

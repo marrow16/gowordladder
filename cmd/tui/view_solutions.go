@@ -28,6 +28,7 @@ type viewSolutions struct {
 	showingAnalysis  bool
 	analysis         []map[string]struct{}
 	wordsDisplayed   wordPoints
+	scrollbar        layout.Scrollbar
 }
 
 const wordNumWidth = 3
@@ -57,8 +58,7 @@ func (v *viewSolutions) render(sf layout.Surface, m *model) *tea.Cursor {
 				sf.TextRight(l+row, 0, wordNumWidth-1, strconv.Itoa(actualRow+1), helpStyle)
 			}
 			for s := 0; s < across && (s+v.offsetX) < len(v.solutions); s++ {
-				solution := v.solutions[s+v.offsetX]
-				ladder := solution.Ladder()
+				ladder := v.solutions[s+v.offsetX].Ladder()
 				ladderLen := len(ladder)
 				col := (s * v.solutionWidth) + wordNumWidth
 				colWs := col + 1
@@ -68,16 +68,26 @@ func (v *viewSolutions) render(sf layout.Surface, m *model) *tea.Cursor {
 					sf.Text(l+row, col, boxBottom, helpStyle)
 				case actualRow == 0:
 					sf.Text(l+row, col, vertical, helpStyle)
-					sf.Text(l+row, colWs, ladder[actualRow].String())
+					v.wordsDisplayed.add(sf.Text(l+row, colWs, ladder[actualRow].String()))
 					sf.Text(l+row, colEnd, vertical, helpStyle)
-					v.wordsDisplayed.addWord(ladder[actualRow].String(), l+3, colWs)
 				case actualRow < ladderLen:
+					var wordStyle []lipgloss.Style
+					letterStyle := diffLetterStyle
+					if s > 0 {
+						// see if this word is different from word in previous ladder...
+						prevLadder := v.solutions[s+v.offsetX-1].Ladder()
+						if actualRow < len(prevLadder) {
+							if ladder[actualRow].String() != prevLadder[actualRow].String() {
+								letterStyle = diffLetterDiffWordStyle
+								wordStyle = []lipgloss.Style{diffWordStyle}
+							}
+						}
+					}
 					sf.Text(l+row, col, vertical, helpStyle)
-					sf.Text(l+row, colWs, ladder[actualRow].String())
+					v.wordsDisplayed.add(sf.Text(l+row, colWs, ladder[actualRow].String(), wordStyle...))
 					sf.Text(l+row, colEnd, vertical, helpStyle)
-					v.wordsDisplayed.addWord(ladder[actualRow].String(), l+3, colWs)
-					prev := []rune(ladder[actualRow-1].String())
 					word := []rune(ladder[actualRow].String())
+					prev := []rune(ladder[actualRow-1].String())
 					diffPos := 0
 					for i, r := range word {
 						if r != prev[i] {
@@ -89,6 +99,11 @@ func (v *viewSolutions) render(sf layout.Surface, m *model) *tea.Cursor {
 				}
 			}
 		}
+		if v.maxLadderLen > maxLines {
+			v.scrollbar = layout.NewVerticalScrollbar(v.scrollHandler(m))
+			rgn := sf.Region(1, 0, sf.Height(), sf.Width())
+			v.scrollbar.Draw(rgn, v.maxLadderLen, v.offsetY)
+		}
 	} else {
 		sf.Text(0, 1, fmt.Sprintf("Analysis of distinct words over %d solutions", len(v.solutions)))
 		maxCount := 1
@@ -98,17 +113,51 @@ func (v *viewSolutions) render(sf layout.Surface, m *model) *tea.Cursor {
 			}
 		}
 		maxDigits := len(strconv.Itoa(maxCount)) + 1
-		maxLines := sf.Height() - 1
-		barWidth := m.width / 2
+		rgn := sf.Region(1, 0, sf.Height(), sf.Width())
+		maxLines := rgn.Height()
+		barWidth := rgn.Width() - maxDigits - 7
 		for l := 0; l < maxLines && (l+v.offsetY) < v.maxLadderLen; l++ {
 			row := l + v.offsetY
-			sf.TextRight(l+1, 1, 3, strconv.Itoa(row+1)+":", helpStyle)
+			rgn.TextRight(l, 1, 3, strconv.Itoa(row+1)+":", helpStyle)
 			count := len(v.analysis[row])
-			sf.TextRight(l+1, 4, maxDigits, strconv.Itoa(count))
-			sf.Block(l+1, maxDigits+5, (count*barWidth)/maxCount, '█', helpStyle)
+			rgn.TextRight(l, 4, maxDigits, strconv.Itoa(count))
+			rgn.Block(l, maxDigits+5, (count*barWidth)/maxCount, '█', helpStyle)
+		}
+		if v.maxLadderLen > maxLines {
+			v.scrollbar = layout.NewVerticalScrollbar(v.scrollHandler(m))
+			v.scrollbar.Draw(rgn, v.maxLadderLen, v.offsetY)
 		}
 	}
 	return nil
+}
+
+func (v *viewSolutions) scroll(msg tea.Msg) (handled bool) {
+	if v.scrollbar != nil {
+		switch msg.(type) {
+		case tea.MouseClickMsg:
+			return v.scrollbar.Update(msg)
+		}
+	}
+	return false
+}
+
+func (v *viewSolutions) scrollHandler(m *model) layout.ScrollHandler {
+	return func(evt layout.ScrollEvent) {
+		switch evt {
+		case layout.ScrollUp:
+			v.key(m, tea.KeyPressMsg{Text: up})
+		case layout.ScrollDown:
+			v.key(m, tea.KeyPressMsg{Text: down})
+		case layout.ScrollPageUp:
+			v.key(m, tea.KeyPressMsg{Text: pageUp})
+		case layout.ScrollPageDown:
+			v.key(m, tea.KeyPressMsg{Text: pageDown})
+		case layout.ScrollHome:
+			v.key(m, tea.KeyPressMsg{Text: home})
+		case layout.ScrollEnd:
+			v.key(m, tea.KeyPressMsg{Text: end})
+		}
+	}
 }
 
 func (v *viewSolutions) helpLines() ([]string, *lipgloss.Style) {
@@ -335,4 +384,8 @@ func sortSolutions(solutions []*solving.Solution) {
 	}
 }
 
-var letterStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000"))
+var (
+	diffLetterStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000"))
+	diffLetterDiffWordStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000")).Background(lipgloss.Color("#eeeeff"))
+	diffWordStyle           = lipgloss.NewStyle().Background(lipgloss.Color("#eeeeee"))
+)

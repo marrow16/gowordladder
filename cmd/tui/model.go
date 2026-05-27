@@ -85,6 +85,9 @@ type viewClickable interface {
 type viewResettable interface {
 	reset(m *model)
 }
+type viewScrollable interface {
+	scroll(msg tea.Msg) (handled bool)
+}
 
 type model struct {
 	logger      *slog.Logger
@@ -158,6 +161,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	} else {
 		msg = msg2
+	}
+	if sv, ok := m.currentView.(viewScrollable); ok {
+		if sv.scroll(msg) {
+			return m, nil
+		}
 	}
 	switch mt := msg.(type) {
 	case switchDictionaryResult:
