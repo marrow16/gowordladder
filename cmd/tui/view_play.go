@@ -34,6 +34,7 @@ type viewPlay struct {
 	solved         bool
 	wordsDisplayed wordPoints
 	mousePositions map[int][2]int
+	scrollbar      layout.Scrollbar
 }
 
 const (
@@ -46,6 +47,7 @@ var deductedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF8000"))
 func (v *viewPlay) render(sf layout.Surface, m *model) *tea.Cursor {
 	v.wordsDisplayed = make(wordPoints)
 	v.mousePositions = make(map[int][2]int)
+	v.scrollbar = nil
 	hdr := layout.Runs{
 		{Text: " Solutions: " + strconv.Itoa(len(v.puzzle.Solutions))},
 		{Text: " Current score: " + strconv.FormatFloat(v.currentScore, 'f', 0, 64) + " "},
@@ -64,51 +66,78 @@ func (v *viewPlay) render(sf layout.Surface, m *model) *tea.Cursor {
 	if v.solved {
 		solvedStyle = []lipgloss.Style{highlightStyle}
 	}
+	rgn := sf.Region(1, 0, sf.Height(), sf.Width())
 	for l := 0; l < maxLines; l++ {
 		rung := l + v.offsetY - 2
-		row := l + 1
 		switch {
 		case rung == -2:
-			sf.Text(row, col, topLeft+strings.Repeat(horizontal, v.puzzle.WordLength)+topRight, helpStyle)
+			rgn.Text(l, col, topLeft+strings.Repeat(horizontal, v.puzzle.WordLength)+topRight, helpStyle)
 		case rung == v.puzzle.LadderLength-1:
-			sf.Text(row, col, bottomLeft+strings.Repeat(horizontal, v.puzzle.WordLength)+bottomRight, helpStyle)
+			rgn.Text(l, col, bottomLeft+strings.Repeat(horizontal, v.puzzle.WordLength)+bottomRight, helpStyle)
 		case rung == -1:
-			sf.TextRight(row, 0, col-1, "1", helpStyle)
-			sf.Text(row, col, vertical, helpStyle)
-			sf.Text(row, colWd, v.puzzle.StartWord.String(), solvedStyle...)
-			sf.Text(row, colEnd, vertical, helpStyle)
-			v.wordsDisplayed.addWord(v.puzzle.StartWord.String(), l+2, colWd)
+			rgn.TextRight(l, 0, col-1, "1", helpStyle)
+			rgn.Text(l, col, vertical, helpStyle)
+			v.wordsDisplayed.add(rgn.Text(l, colWd, v.puzzle.StartWord.String(), solvedStyle...))
+			rgn.Text(l, colEnd, vertical, helpStyle)
 		case rung == v.puzzle.LadderLength-2:
-			sf.TextRight(row, 0, col-1, strconv.Itoa(v.puzzle.LadderLength), helpStyle)
-			sf.Text(row, col, vertical, helpStyle)
-			sf.Text(row, colWd, v.puzzle.EndWord.String(), solvedStyle...)
-			sf.Text(row, colEnd, vertical, helpStyle)
-			v.wordsDisplayed.addWord(v.puzzle.EndWord.String(), l+2, colWd)
+			rgn.TextRight(l, 0, col-1, strconv.Itoa(v.puzzle.LadderLength), helpStyle)
+			rgn.Text(l, col, vertical, helpStyle)
+			v.wordsDisplayed.add(rgn.Text(l, colWd, v.puzzle.EndWord.String(), solvedStyle...))
+			rgn.Text(l, colEnd, vertical, helpStyle)
 		case rung < v.puzzle.LadderLength:
 			if rung == v.onStep {
 				csr = tea.NewCursor(colWd+v.onChar, l+2)
 				csr.Color = playCursorColor
 			}
-			sf.TextRight(row, 0, col-1, strconv.Itoa(rung+2), helpStyle)
-			sf.Text(row, col, vertical, helpStyle)
+			rgn.TextRight(l, 0, col-1, strconv.Itoa(rung+2), helpStyle)
+			rgn.Text(l, col, vertical, helpStyle)
 			switch {
 			case v.solved:
-				sf.Text(row, colWd, v.entries[rung], highlightStyle)
-				v.wordsDisplayed.addWord(v.entries[rung], l+2, colWd)
+				v.wordsDisplayed.add(rgn.Text(l, colWd, v.entries[rung], highlightStyle))
 			case v.okWords[rung]:
-				sf.Text(row, colWd, v.entries[rung], highlightStyle)
+				rgn.Text(l, colWd, v.entries[rung], highlightStyle)
 				v.mousePositions[l+2] = [2]int{rung, colWd}
 			default:
-				sf.Text(row, colWd, v.entries[rung])
+				rgn.Text(l, colWd, v.entries[rung])
 				v.mousePositions[l+2] = [2]int{rung, colWd}
 			}
-			if v.solved {
-				sf.Text(row, colWd, v.entries[rung], highlightStyle)
-			}
-			sf.Text(row, colEnd, vertical, helpStyle)
+			rgn.Text(l, colEnd, vertical, helpStyle)
 		}
 	}
+	if v.puzzle.LadderLength+1 > rgn.Height() {
+		v.scrollbar = layout.NewVerticalScrollbar(v.scrollHandler(m))
+		v.scrollbar.Draw(rgn, v.puzzle.LadderLength+2, v.offsetY)
+	}
 	return csr
+}
+
+func (v *viewPlay) scroll(msg tea.Msg) (handled bool) {
+	if v.scrollbar != nil {
+		switch msg.(type) {
+		case tea.MouseClickMsg:
+			return v.scrollbar.Update(msg)
+		}
+	}
+	return false
+}
+
+func (v *viewPlay) scrollHandler(m *model) layout.ScrollHandler {
+	return func(evt layout.ScrollEvent) {
+		switch evt {
+		case layout.ScrollUp:
+			v.key(m, tea.KeyPressMsg{Text: up})
+		case layout.ScrollDown:
+			v.key(m, tea.KeyPressMsg{Text: down})
+		case layout.ScrollPageUp:
+			v.key(m, tea.KeyPressMsg{Text: pageUp})
+		case layout.ScrollPageDown:
+			v.key(m, tea.KeyPressMsg{Text: pageDown})
+		case layout.ScrollHome:
+			v.key(m, tea.KeyPressMsg{Text: home})
+		case layout.ScrollEnd:
+			v.key(m, tea.KeyPressMsg{Text: end})
+		}
+	}
 }
 
 func (v *viewPlay) helpLines() ([]string, *lipgloss.Style) {
@@ -285,16 +314,18 @@ func (v *viewPlay) click(m *model, msg tea.Mouse) tea.Cmd {
 			return m.lookupDistance(wd)
 		}
 	}
-	if mp, ok := v.mousePositions[msg.Y]; ok {
-		return func() tea.Msg {
-			v.onStep = mp[0]
-			v.onChar = msg.X - mp[1]
-			if v.onChar < 0 {
-				v.onChar = 0
-			} else if v.onChar >= v.puzzle.WordLength {
-				v.onChar = v.puzzle.WordLength - 1
+	if msg.X < m.width-1 {
+		if mp, ok := v.mousePositions[msg.Y]; ok {
+			return func() tea.Msg {
+				v.onStep = mp[0]
+				v.onChar = msg.X - mp[1]
+				if v.onChar < 0 {
+					v.onChar = 0
+				} else if v.onChar >= v.puzzle.WordLength {
+					v.onChar = v.puzzle.WordLength - 1
+				}
+				return nil
 			}
-			return nil
 		}
 	}
 	return nil

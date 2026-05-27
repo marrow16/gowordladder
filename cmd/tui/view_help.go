@@ -14,33 +14,50 @@ type helpView interface {
 }
 
 type viewHelp struct {
-	backMode mode
-	backView view
-	offsetY  int
-	maxRow   int
-	clickF2Y int
+	backMode  mode
+	backView  view
+	offsetY   int
+	maxRow    int
+	clickF2Y  int
+	scrollbar layout.Scrollbar
 }
 
 func (v *viewHelp) render(sf layout.Surface, m *model) *tea.Cursor {
-	rgn := sf.Region(1, 1, sf.Height(), sf.Width()-2)
+	rgn := sf.Region(0, 1, sf.Height(), sf.Width()-1)
 	row := 0
-	hLine := strings.Repeat(horizontal, rgn.Width())
+	wd := rgn.Width() - 2
+	hLine := strings.Repeat(horizontal, wd)
 	for s, section := range helpText {
 		if s > 0 {
 			rgn.Text(row-v.offsetY, 0, hLine, helpStyle)
 			row++
 		}
-		rgn.TextCenter(row-v.offsetY, 0, rgn.Width(), section.header, boldStyle)
+		rgn.TextCenter(row-v.offsetY, 0, wd, section.header, boldStyle)
 		row++
-		row += rgn.TextRunWrapped(row-v.offsetY, 0, rgn.Width(), section.text)
+		row += rgn.TextRunWrapped(row-v.offsetY, 0, wd, section.text)
 	}
 	rgn.Text(row+1-v.offsetY, 0, hLine, helpStyle)
-	rgn.TextCenter(row+2-v.offsetY, 0, rgn.Width(), "Current Dictionary", boldStyle)
-	rgn.TextCenter(row+3-v.offsetY, 0, rgn.Width(), words.CurrentDictionary(), highlightStyle)
-	rgn.TextCenter(row+4-v.offsetY, 0, rgn.Width(), fSwitch+": Switch", helpStyle)
+	rgn.TextCenter(row+2-v.offsetY, 0, wd, "Current Dictionary", boldStyle)
+	rgn.TextCenter(row+3-v.offsetY, 0, wd, words.CurrentDictionary(), highlightStyle)
+	rgn.TextCenter(row+4-v.offsetY, 0, wd, fSwitch+": Switch", helpStyle)
 	v.clickF2Y = row + 6 - v.offsetY
 	v.maxRow = row + 4
+
+	v.scrollbar = layout.NewVerticalScrollbar(v.scrollHandler)
+	v.scrollbar.Draw(rgn, row+4, v.offsetY)
+
 	return nil
+}
+
+func (v *viewHelp) scroll(msg tea.Msg) (handled bool) {
+	if v.scrollbar != nil {
+		return v.scrollbar.Update(msg)
+	}
+	return false
+}
+
+func (v *viewHelp) scrollHandler(evt layout.ScrollEvent) {
+	v.offsetY = v.scrollbar.NewPosition(v.offsetY, evt)
 }
 
 func (v *viewHelp) helpLines() ([]string, *lipgloss.Style) {
@@ -51,28 +68,6 @@ func (v *viewHelp) key(m *model, msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
 	case back, backspace:
 		m.restoreView(help, v.backMode, v.backView)
-	case up:
-		if v.offsetY > 0 {
-			v.offsetY--
-		}
-	case down:
-		if v.offsetY < v.maxRow-4 {
-			v.offsetY++
-		}
-	case home:
-		v.offsetY = 0
-	case end:
-		v.offsetY = v.maxRow - 3
-	case pageUp:
-		v.offsetY -= m.height - 6
-		if v.offsetY < 0 {
-			v.offsetY = 0
-		}
-	case pageDown:
-		v.offsetY += m.height - 6
-		if v.offsetY >= v.maxRow-4 {
-			v.offsetY = v.maxRow - 3
-		}
 	}
 	return nil
 }
@@ -196,10 +191,14 @@ var helpText = []helpSection{
 			Add("\n").
 			Add("Having entered a word, the display shows the maximum ladder length from that word and the words that can be reached for each ladder length.\n").
 			Add("\n").
-			Add("You can press ").
-			Add("1", helpKeyStyle).Add(" to show island words, ").
-			Add("2", helpKeyStyle).Add(" to show doublet words, or ").
-			Add("0", helpKeyStyle).Add(" to show words for longest possible ladders."),
+			Add("You can also press:\n").
+			Add("1", helpKeyStyle).Add(" - to show island words\n").
+			Add("2", helpKeyStyle).Add(" - to show doublet words\n").
+			Add("0", helpKeyStyle).Add(" - to show longest ladder words\n").
+			Add("=", helpKeyStyle).Add(" - to show adjacent words graph\n").
+			Add("-", helpKeyStyle).Add(" - to show overall distances graph\n").
+			Add("+", helpKeyStyle).Add(" - to show overall distances spread\n").
+			Add("_", helpKeyStyle).Add(" - to show overall word counts"),
 	},
 	{
 		"Terminology",

@@ -76,8 +76,7 @@ func (v *viewSolve) render(sf layout.Surface, m *model) *tea.Cursor {
 	case solveEndWord:
 		wl := len(v.startWord.String())
 		sf.TextRight(1, 1, promptLen, promptStartWord)
-		sf.TextFixed(1, promptLen+2, len(v.startWord.String()), v.startWord.String(), inputStyle)
-		v.wordsDisplayed.addWord(v.startWord.String(), 2, promptLen+2)
+		v.wordsDisplayed.add(sf.TextFixed(1, promptLen+2, len(v.startWord.String()), v.startWord.String(), inputStyle))
 		sf.TextRight(2, 1, promptLen, promptEndWord)
 		if v.currentInput == nil {
 			v.currentInput = &wordInput{maxLength: wl}
@@ -92,11 +91,9 @@ func (v *viewSolve) render(sf layout.Surface, m *model) *tea.Cursor {
 	case solveMaxLadder:
 		wl := len(v.startWord.String())
 		sf.TextRight(1, 1, promptLen, promptStartWord)
-		sf.TextFixed(1, promptLen+2, wl, v.startWord.String(), inputStyle)
-		v.wordsDisplayed.addWord(v.startWord.String(), 2, promptLen+2)
+		v.wordsDisplayed.add(sf.TextFixed(1, promptLen+2, wl, v.startWord.String(), inputStyle))
 		sf.TextRight(2, 1, promptLen, promptEndWord)
-		sf.TextFixed(2, promptLen+2, wl, v.endWord.String(), inputStyle)
-		v.wordsDisplayed.addWord(v.endWord.String(), 3, promptLen+2)
+		v.wordsDisplayed.add(sf.TextFixed(2, promptLen+2, wl, v.endWord.String(), inputStyle))
 		sf.TextRight(3, 1, promptLen, promptMaxLadder)
 		if v.currentInput == nil {
 			v.currentInput = &numberInput{maxLength: 2}
@@ -111,11 +108,9 @@ func (v *viewSolve) render(sf layout.Surface, m *model) *tea.Cursor {
 	case solveSolved:
 		wl := len(v.startWord.String())
 		sf.TextRight(1, 1, promptLen, promptStartWord)
-		sf.TextFixed(1, promptLen+2, wl, v.startWord.String(), inputStyle)
-		v.wordsDisplayed.addWord(v.startWord.String(), 2, promptLen+2)
+		v.wordsDisplayed.add(sf.TextFixed(1, promptLen+2, wl, v.startWord.String(), inputStyle))
 		sf.TextRight(2, 1, promptLen, promptEndWord)
-		sf.TextFixed(2, promptLen+2, wl, v.endWord.String(), inputStyle)
-		v.wordsDisplayed.addWord(v.endWord.String(), 3, promptLen+2)
+		v.wordsDisplayed.add(sf.TextFixed(2, promptLen+2, wl, v.endWord.String(), inputStyle))
 		sf.TextRight(3, 1, promptLen, promptMaxLadder)
 		if v.ladderLength == -1 {
 			sf.TextFixed(3, promptLen+2, 2, "??", inputStyle)
