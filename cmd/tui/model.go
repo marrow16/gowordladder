@@ -30,6 +30,7 @@ const (
 	highs
 	switchDict
 	help
+	lingo
 )
 
 func (m mode) String() string {
@@ -52,6 +53,8 @@ func (m mode) String() string {
 		return "Switch Dictionary"
 	case help:
 		return "Help"
+	case lingo:
+		return "Lingo Game"
 	}
 	return ""
 }
@@ -104,6 +107,7 @@ type model struct {
 	viewScores     scoresView
 	viewDictSwitch switchView
 	viewHelp       helpView
+	viewLingo      view
 	lookupViews    []lookupView
 	menu           *menu
 
@@ -141,6 +145,7 @@ func newModel(withLogging bool) *model {
 		viewScores:          &viewScores{},
 		viewDictSwitch:      &viewSwitch{},
 		viewHelp:            &viewHelp{},
+		viewLingo:           &viewLingo{},
 		menu:                &menu{},
 		dictionaryLoadTimes: map[int]time.Duration{},
 	}
@@ -229,6 +234,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.showHelp()
 		case fSwitch:
 			m.showDictionarySwitch()
+		case "f3":
+			if m.mode != lingo {
+				m.mode = lingo
+				m.currentView = m.viewLingo
+			}
 		case ctrlWord:
 			return m, m.lookupWord(m.currentView.currentWord())
 		case ctrlDistances:

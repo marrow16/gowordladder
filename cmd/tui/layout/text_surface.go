@@ -14,7 +14,7 @@ type surfaceText interface {
 	Height() int
 	Width() int
 	Text(row int, col int, text string, styles ...lipgloss.Style) Placement
-	TextRun(row int, col int, items Runs)
+	TextRun(row int, col int, items Runs) []Placement
 	TextRunWrapped(row, col, width int, items Runs) int
 	TextFixed(row int, col int, width int, text string, styles ...lipgloss.Style) Placement
 	TextRight(row int, col int, width int, text string, styles ...lipgloss.Style)
@@ -49,12 +49,13 @@ func (s textSurface) Text(row, col int, text string, styles ...lipgloss.Style) (
 	return result
 }
 
-func (s textSurface) TextRun(row, col int, items Runs) {
+func (s textSurface) TextRun(row, col int, items Runs) (result []Placement) {
 	for _, item := range items {
 		extent := utf8.RuneCountInString(item.Text)
-		s.placer.place(row, col, item.Text, extent, item.Styles...)
+		result = append(result, s.placer.place(row, col, item.Text, extent, item.Styles...))
 		col += extent
 	}
+	return result
 }
 
 func (s textSurface) TextRunWrapped(row, col, width int, items Runs) int {

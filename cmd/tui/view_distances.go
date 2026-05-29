@@ -202,28 +202,25 @@ func (v *viewDistances) helpLines() ([]string, *lipgloss.Style) {
 }
 
 func (v *viewDistances) menu() []menuItem {
-	if v.distancesResult != nil && v.distancesResult.mode == distancesNormal {
-		return []menuItem{
-			{text: "Analyse", key: ctrlAnalyse},
-			{text: "Islands", key: "1"},
-			{text: "Doublets", key: "2"},
-			{text: "Longest ladders", key: "0"},
-			{},
-			{text: "Export", key: ctrlExport},
-		}
-	} else if v.distancesResult != nil && v.distancesResult.mode != distancesOverall {
-		return []menuItem{
-			{text: "Distances", key: enter},
-			{text: "Islands", key: "1"},
-			{text: "Doublets", key: "2"},
-			{text: "Longest ladders", key: "0"},
-			{},
-			{text: "Export", key: ctrlExport},
-		}
+	if l := len(v.input.value()); l < 2 || l > 15 {
+		return nil
 	}
-	return []menuItem{
+	menuItems := []menuItem{
 		{text: "Distances", key: enter},
+		{text: "Islands", key: "1"},
+		{text: "Doublets", key: "2"},
+		{text: "Longest ladders", key: "0"},
 	}
+	if v.distancesResult != nil {
+		switch v.distancesResult.mode {
+		case distancesNormal:
+			menuItems[0] = menuItem{text: "Analyse", key: ctrlAnalyse}
+			menuItems = append(menuItems, menuItem{}, menuItem{text: "Export", key: ctrlExport})
+		case distancesIslands, distancesDoublets, distancesLongests, distancesAnalysis:
+			menuItems = append(menuItems, menuItem{}, menuItem{text: "Export", key: ctrlExport})
+		}
+	}
+	return menuItems
 }
 
 func (v *viewDistances) key(m *model, msg tea.KeyPressMsg) tea.Cmd {

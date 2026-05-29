@@ -62,16 +62,8 @@ func (r *region) rows_() rows {
 	return result
 }
 
-func (r *region) rowUsed(row int) bool {
-	return r.parent.rowUsed(row + r.offsetRow)
-}
-
 func (r *region) Render() string {
-	used := make([]bool, r.height)
-	for y := range r.height {
-		used[y] = r.parent.rowUsed(y + r.offsetRow)
-	}
-	return r.rows_().render(used)
+	return r.rows_().render()
 }
 
 func (r *region) Region(row, col, height, width int) Surface {
@@ -93,4 +85,12 @@ func (r *region) AbsoluteTop() int {
 
 func (r *region) AbsoluteLeft() int {
 	return r.parent.AbsoluteLeft() + r.offsetCol
+}
+
+func (r *region) Clear() {
+	r.parent.ClearArea(r.offsetRow, r.offsetCol, r.height, r.width)
+}
+
+func (r *region) ClearArea(row, col, height, width int) {
+	r.parent.ClearArea(r.offsetRow+row, r.offsetCol+col, height, width)
 }

@@ -17,33 +17,45 @@ func newRows(height, width int) rows {
 
 var cr = []byte{'\n'}
 
-func (rs rows) render(used []bool) string {
+func (rs rows) render() string {
 	if len(rs) == 0 {
 		return ""
 	}
 	spaces := bytes.Repeat([]byte{' '}, len(rs[0]))
 	var buf bytes.Buffer
-	for rn, r := range rs {
-		if used[rn] {
-			lastCol := 0
-			for c, seg := range r {
-				if seg == nil {
-					continue
-				}
-				if pad := c - lastCol; pad > 0 {
-					buf.Write(spaces[:pad])
-				}
-				if seg.style != nil {
-					buf.WriteString(seg.style.Render(seg.text))
-				} else {
-					buf.WriteString(seg.text)
-				}
-				lastCol = c + seg.extent
+	for _, r := range rs {
+		lastCol := 0
+		for c, seg := range r {
+			if seg == nil {
+				continue
 			}
+			if pad := c - lastCol; pad > 0 {
+				buf.Write(spaces[:pad])
+			}
+			if seg.style != nil {
+				buf.WriteString(seg.style.Render(seg.text))
+			} else {
+				buf.WriteString(seg.text)
+			}
+			lastCol = c + seg.extent
 		}
 		buf.Write(cr)
 	}
 	return buf.String()
+}
+
+func (rs rows) clear(row, col, height, width int) {
+	if row < 0 {
+		height += row
+		row = 0
+	}
+	if col < 0 {
+		width += col
+		col = 0
+	}
+	for y := 0; y < height && y+row < len(rs); y++ {
+		rs[y+row].clear(col, width)
+	}
 }
 
 type surfaceSegment struct {
@@ -74,9 +86,10 @@ func (r row) place(col int, seg *surfaceSegment) bool {
 	if seg.extent <= 0 {
 		return false
 	}
-	st := col
-	nd := col + seg.extent
-	for c := 0; c < len(r) && c < nd; c++ {
+	start := col
+	end := col + seg.extent
+	l := len(r)
+	for c := 0; c < l && c < end; c++ {
 		existing := r[c]
 		if existing == nil {
 			continue
@@ -84,26 +97,27 @@ func (r row) place(col int, seg *surfaceSegment) bool {
 		exStart := c
 		exEnd := c + existing.extent
 		// no overlap
-		if exEnd <= st || exStart >= nd {
+		if exEnd <= start || exStart >= end {
 			continue
 		}
 		// remove existing segment
 		r[c] = nil
+		existingRunes := []rune(existing.text)
 		// keep left remainder
-		if exStart < st {
-			leftLen := st - exStart
+		if exStart < start {
+			leftLen := start - exStart
 			r[exStart] = &surfaceSegment{
-				text:   string([]rune(existing.text)[:leftLen]),
+				text:   string(existingRunes[:leftLen]),
 				extent: leftLen,
 				style:  existing.style,
 			}
 		}
 		// keep right remainder
-		if exEnd > nd {
-			rightOffset := nd - exStart
-			r[nd] = &surfaceSegment{
-				text:   string([]rune(existing.text)[rightOffset:]),
-				extent: exEnd - nd,
+		if exEnd > end {
+			rightOffset := end - exStart
+			r[end] = &surfaceSegment{
+				text:   string(existingRunes[rightOffset:]),
+				extent: exEnd - end,
 				style:  existing.style,
 			}
 			// and we're done
@@ -112,4 +126,60 @@ func (r row) place(col int, seg *surfaceSegment) bool {
 	}
 	r[col] = seg
 	return true
+}
+
+func (r row) clear(col int, width int) {
+	if width <= 0 || col >= len(r) {
+		return
+	}
+	if col < 0 {
+		width += col
+		col = 0
+		if width <= 0 {
+			return
+		}
+	}
+	if col+width > len(r) {
+		width = len(r) - col
+	}
+	if width <= 0 {
+		return
+	}
+	start := col
+	end := col + width
+	l := len(r)
+	for c := 0; c < l && c < end; c++ {
+		existing := r[c]
+		if existing == nil {
+			continue
+		}
+		exStart := c
+		exEnd := c + existing.extent
+		// no overlap
+		if exEnd <= start || exStart >= end {
+			continue
+		}
+		// remove existing segment
+		r[c] = nil
+		existingRunes := []rune(existing.text)
+		// keep left remainder
+		if exStart < start {
+			leftLen := start - exStart
+			r[exStart] = &surfaceSegment{
+				text:   string(existingRunes[:leftLen]),
+				extent: leftLen,
+				style:  existing.style,
+			}
+		}
+		// keep right remainder
+		if exEnd > end {
+			rightOffset := end - exStart
+			r[end] = &surfaceSegment{
+				text:   string(existingRunes[rightOffset:]),
+				extent: exEnd - end,
+				style:  existing.style,
+			}
+			break
+		}
+	}
 }
