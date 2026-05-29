@@ -30,6 +30,7 @@ var baseMenuItems = []menuItem{
 	{text: "Solver", key: ctrlSolver},
 	{text: "Word lookup", key: ctrlWord},
 	{text: "Word distances", key: ctrlDistances},
+	{text: "Lingo game", key: "f3"},
 	{},
 	{text: "High Scores", key: ctrlHighScores},
 	{text: "Switch Dictionary", key: fSwitch},

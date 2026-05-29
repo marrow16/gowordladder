@@ -9,11 +9,12 @@ import (
 )
 
 type prefs struct {
-	WordLength       int         `json:"wordLength"`
-	LadderLength     int         `json:"ladderLength"`
-	HighScores       []highScore `json:"highScores,omitempty"`
-	MaxScores        int         `json:"maxScores"`
-	UsedDictionaries []string    `json:"usedDictionaries"`
+	WordLength       int            `json:"wordLength"`
+	LadderLength     int            `json:"ladderLength"`
+	HighScores       []highScore    `json:"highScores,omitempty"`
+	MaxScores        int            `json:"maxScores"`
+	UsedDictionaries []string       `json:"usedDictionaries"`
+	Miscellaneous    map[string]any `json:"miscellaneous"`
 }
 type highScore struct {
 	Score        float64 `json:"score"`
@@ -100,5 +101,29 @@ func (p *prefs) addScore(score, maxScore float64, wordLength, ladderLength int, 
 
 func (p *prefs) clearScores() {
 	p.HighScores = []highScore{}
+	p.save()
+}
+
+func (p *prefs) getInt(name string) int {
+	if v, ok := p.Miscellaneous[name]; ok {
+		switch vt := v.(type) {
+		case int:
+			return vt
+		case float64:
+			return int(vt)
+		case json.Number:
+			if i, err := vt.Int64(); err == nil {
+				return int(i)
+			}
+		}
+	}
+	return 0
+}
+
+func (p *prefs) setInt(name string, value int) {
+	if p.Miscellaneous == nil {
+		p.Miscellaneous = make(map[string]any)
+	}
+	p.Miscellaneous[name] = value
 	p.save()
 }

@@ -36,12 +36,11 @@ func (v *viewScores) render(sf layout.Surface, m *model) *tea.Cursor {
 		row := (i - v.offsetY) * 2
 		sf.TextRight(row, 1, 3, strconv.Itoa(i+1)+".", boldStyle)
 		sf.Text(row, 5, strconv.FormatFloat(s.Score, 'f', 0, 64)+" ("+strconv.FormatFloat((s.Score/s.MaxScore)*100, 'f', 0, 64)+"%)", boldStyle)
-		sf.TextRun(row+1, 5, layout.NewRuns(s.Date+"  ", scoreDetailStyle).
+
+		ps := sf.TextRun(row+1, 5, layout.NewRuns(s.Date+"  ", scoreDetailStyle).
 			Add(s.StartWord, highlightStyle).Add(" to ").Add(s.EndWord, highlightStyle).
 			Add(" ("+strconv.Itoa(s.LadderLength)+" rungs)", scoreDetailStyle))
-		dtWidth := len(s.Date)
-		v.wordsDisplayed.addWord(s.StartWord, sf.AbsoluteTop()+row+1, sf.AbsoluteLeft()+dtWidth+7)
-		v.wordsDisplayed.addWord(s.EndWord, sf.AbsoluteTop()+row+1, sf.AbsoluteLeft()+dtWidth+11+len(s.StartWord))
+		v.wordsDisplayed.add(ps[1], ps[3])
 	}
 	if v.maxItems > 1 {
 		v.scrollbar = layout.NewVerticalScrollbar(v.scrollHandler).ItemSize(2)

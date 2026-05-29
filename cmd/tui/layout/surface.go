@@ -7,7 +7,6 @@ import (
 type surfaceInternal interface {
 	place(row int, col int, text string, extent int, styles ...lipgloss.Style) Placement
 	rows_() rows
-	rowUsed(row int) bool
 }
 
 type Surface interface {
@@ -17,18 +16,18 @@ type Surface interface {
 	Region(row, col, height, width int) Surface
 	AbsoluteTop() int
 	AbsoluteLeft() int
+	Clear()
+	ClearArea(row, col, height, width int)
 }
 
 type surface struct {
 	textSurface
-	rows     rows
-	usedRows []bool
+	rows rows
 }
 
 func NewSurface(height, width int) Surface {
 	sf := &surface{
-		rows:     newRows(height, width),
-		usedRows: make([]bool, height),
+		rows: newRows(height, width),
 	}
 	sf.textSurface = textSurface{
 		height: height,
@@ -39,15 +38,11 @@ func NewSurface(height, width int) Surface {
 }
 
 func (s *surface) Render() string {
-	return s.rows.render(s.usedRows)
+	return s.rows.render()
 }
 
 func (s *surface) rows_() rows {
 	return s.rows
-}
-
-func (s *surface) rowUsed(row int) bool {
-	return s.usedRows[row]
 }
 
 func (s *surface) place(row, col int, text string, extent int, styles ...lipgloss.Style) (result Placement) {
@@ -58,9 +53,7 @@ func (s *surface) place(row, col int, text string, extent int, styles ...lipglos
 			extent: extent,
 			style:  style,
 		}
-		if s.rows[row].place(col, seg) {
-			s.usedRows[row] = true
-		}
+		s.rows[row].place(col, seg)
 		result = Placement{
 			Text:   text,
 			Extent: extent,
@@ -92,6 +85,14 @@ func (s *surface) AbsoluteTop() int {
 
 func (s *surface) AbsoluteLeft() int {
 	return 0
+}
+
+func (s *surface) Clear() {
+	s.rows = newRows(s.height, s.width)
+}
+
+func (s *surface) ClearArea(row, col, height, width int) {
+	s.rows.clear(row, col, height, width)
 }
 
 func styleValue(style *lipgloss.Style) []lipgloss.Style {
